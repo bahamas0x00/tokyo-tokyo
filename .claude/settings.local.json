@@ -1,0 +1,19 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(open *)",
+      "WebSearch",
+      "WebFetch(domain:pipoya.itch.io)",
+      "WebFetch(domain:limezu.itch.io)",
+      "WebFetch(domain:opengameart.org)",
+      "Bash(curl -L -o /Users/bahamas/claude/tokyo-tokyo/pixel/assets/tileset/tileset.zip \"https://opengameart.org/sites/default/files/tilesets_edit_5.zip\")",
+      "Bash(curl -L -o /Users/bahamas/claude/tokyo-tokyo/pixel/assets/character/character.png \"https://opengameart.org/sites/default/files/mapspriteskins.png\")",
+      "Bash(unzip -o tileset.zip)",
+      "Bash(sips -g pixelWidth -g pixelHeight /Users/bahamas/claude/tokyo-tokyo/pixel/assets/tileset/tilesets_edit/*.png)",
+      "Bash(sips -g pixelWidth -g pixelHeight /Users/bahamas/claude/tokyo-tokyo/pixel/assets/character/character.png)",
+      "Bash(gh repo *)",
+      "Bash(git --version)",
+      "Bash(git add *)"
+    ]
+  }
+}

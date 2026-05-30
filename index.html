@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>東京社畜</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@300;400;700&family=Share+Tech+Mono&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <div class="scanlines"></div>
+  <div id="app">
+
+    <!-- ── 标题 ── -->
+    <div id="screen-title" class="screen active">
+      <div class="title-art">
+        <div class="title-jp neon-pink">東京社畜</div>
+        <div class="title-sub neon-cyan">TOKYO SHACHO</div>
+        <div class="title-desc">在这座永不停歇的城市里，你只是一颗螺丝钉。</div>
+      </div>
+      <div class="title-menu">
+        <button class="menu-btn" id="btn-new">[ 新游戏 ]</button>
+        <button class="menu-btn" id="btn-continue" disabled>[ 继续 ]</button>
+        <button class="menu-btn secondary" id="btn-export">[ 导出存档 ]</button>
+        <button class="menu-btn secondary" id="btn-import">[ 导入存档 ]</button>
+      </div>
+      <div class="title-time">
+        <span class="neon-cyan">🗼 东京时间</span>
+        <span id="title-clock" class="mono neon-pink">──:──:──</span>
+      </div>
+    </div>
+
+    <!-- ── 创建角色 ── -->
+    <div id="screen-create" class="screen">
+      <div class="create-box">
+        <div class="create-title neon-cyan">── 新的社畜诞生 ──</div>
+        <div class="create-scene">
+          <p>入职第一天。</p>
+          <p>你跟着公司从F国搬来了这座城市。<br/>你不会日语，但合同已经签了。</p>
+          <p>请告诉我，你叫什么名字？</p>
+        </div>
+        <div class="name-input-row">
+          <input type="text" id="player-name-input" class="name-input" placeholder="输入你的名字" maxlength="12" />
+          <button class="menu-btn" id="btn-start-game">入 职 →</button>
+        </div>
+        <div id="create-error" class="error-msg hidden"></div>
+      </div>
+    </div>
+
+    <!-- ── 游戏主界面 ── -->
+    <div id="screen-game" class="screen">
+      <header class="game-header">
+        <div class="header-left">
+          <span class="neon-pink mono" id="hdr-name">─</span>
+          <span class="hdr-sep">|</span>
+          <span class="neon-cyan mono" id="hdr-title">新卒社員</span>
+          <span class="hdr-sep">|</span>
+          <span class="mono dim" id="hdr-company">株式会社ブラック商事</span>
+        </div>
+        <div class="header-right">
+          <span class="mono dim">DAY </span>
+          <span class="neon-pink mono" id="hdr-day">1</span>
+          <span class="hdr-sep">|</span>
+          <span class="neon-cyan mono" id="hdr-clock">──:──</span>
+          <span class="mono dim" id="hdr-phase"> [深夜]</span>
+        </div>
+      </header>
+
+      <div class="game-body">
+        <!-- 左：状态 -->
+        <aside class="stats-panel">
+          <div class="stats-title">── 状态 ──</div>
+
+          <div class="stat-row">
+            <span class="stat-label">体力</span>
+            <div class="stat-bar-wrap"><div class="stat-bar" id="bar-energy" data-color="cyan"></div></div>
+            <span class="stat-val" id="val-energy">─</span>
+          </div>
+          <div class="stat-row">
+            <span class="stat-label">健康</span>
+            <div class="stat-bar-wrap"><div class="stat-bar" id="bar-health" data-color="green"></div></div>
+            <span class="stat-val" id="val-health">─</span>
+          </div>
+          <div class="stat-row">
+            <span class="stat-label">快乐</span>
+            <div class="stat-bar-wrap"><div class="stat-bar" id="bar-happiness" data-color="pink"></div></div>
+            <span class="stat-val" id="val-happiness">─</span>
+          </div>
+          <div class="stat-row">
+            <span class="stat-label">工作</span>
+            <div class="stat-bar-wrap"><div class="stat-bar" id="bar-work" data-color="orange"></div></div>
+            <span class="stat-val" id="val-work">─</span>
+          </div>
+
+          <div class="stats-sep"></div>
+
+          <div class="stat-money">
+            <span class="stat-label">存款</span>
+            <span class="neon-cyan mono" id="val-savings">¥ ─</span>
+          </div>
+          <div class="stat-money">
+            <span class="stat-label">月薪</span>
+            <span class="mono dim" id="val-salary">¥ ─</span>
+          </div>
+
+          <div class="stats-sep"></div>
+
+          <div class="phase-panel">
+            <div class="stats-title">── 今日进度 ──</div>
+            <div id="phase-indicators"></div>
+          </div>
+
+          <div class="stats-sep"></div>
+
+          <button class="menu-btn secondary small" id="btn-save">[ 手动存档 ]</button>
+          <button class="menu-btn secondary small" id="btn-to-title">[ 回标题 ]</button>
+        </aside>
+
+        <!-- 右：事件 -->
+        <main class="event-panel">
+          <div class="event-phase-tag" id="event-phase-tag">── 深夜 ──</div>
+          <div class="event-text" id="event-text"><span class="cursor-blink">█</span></div>
+          <div class="choice-area" id="choice-area"></div>
+          <div class="log-area">
+            <div class="log-title">── 今日记录 ──</div>
+            <div id="event-log"></div>
+          </div>
+        </main>
+      </div>
+    </div>
+
+  </div>
+
+  <script src="js/save.js"></script>
+  <script src="js/player.js"></script>
+  <script src="js/events.js"></script>
+  <script src="js/ui.js"></script>
+  <script src="js/game.js"></script>
+</body>
+</html>

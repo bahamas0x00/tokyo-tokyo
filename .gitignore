@@ -1,0 +1,5 @@
+.DS_Store
+__MACOSX/
+pixel/assets/tileset/tileset.zip
+node_modules/
+*.log
