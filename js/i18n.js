@@ -21,6 +21,7 @@ const I18N = {
 
     // game header
     'lang.toggle':       'EN',
+    'lang.change':       '🌐 语言',
 
     // stat panel
     'panel.status':      '── 状 态 ──',
@@ -179,6 +180,7 @@ const I18N = {
 
     // game header
     'lang.toggle':       '中',
+    'lang.change':       '🌐 Language',
 
     // stat panel
     'panel.status':      '── STATUS ──',
@@ -337,6 +339,7 @@ const I18N = {
 
     // game header
     'lang.toggle':       '中',
+    'lang.change':       '🌐 言語',
 
     // stat panel
     'panel.status':      '── ス テ ー タ ス ──',
@@ -476,10 +479,10 @@ const I18N = {
   },
 };
 
-const LANG_CYCLE = ['zh', 'ja', 'en'];
-const LANG_LABELS = { zh: '日', ja: 'EN', en: '中' }; // label = next language
-
 let _lang = localStorage.getItem('tokyo_lang') || 'zh';
+
+// 是否已经选过语言（决定首次加载是否弹出语言选择界面）
+function langChosen() { return localStorage.getItem('tokyo_lang') != null; }
 
 function t(key, vars) {
   const str = I18N[_lang]?.[key] ?? I18N.zh[key] ?? key;
@@ -489,22 +492,10 @@ function t(key, vars) {
 
 function getLang() { return _lang; }
 
-function cycleLang() {
-  const idx = LANG_CYCLE.indexOf(_lang);
-  return LANG_CYCLE[(idx + 1) % LANG_CYCLE.length];
-}
-
 function setLang(lang) {
   _lang = lang;
   localStorage.setItem('tokyo_lang', lang);
   applyI18n();
-}
-
-function updateLangButtons() {
-  const label = LANG_LABELS[_lang] || 'EN';
-  document.querySelectorAll('#btn-lang, #btn-lang-game').forEach(el => {
-    el.textContent = label;
-  });
 }
 
 function applyI18n() {
@@ -518,6 +509,9 @@ function applyI18n() {
   document.querySelectorAll('[data-i18n-value]').forEach(el => {
     el.value = t(el.dataset.i18nValue);
   });
+  // 高亮语言选择界面里当前选中的语言
+  document.querySelectorAll('.lang-opt').forEach(el => {
+    el.classList.toggle('selected', el.dataset.lang === _lang);
+  });
   document.documentElement.lang = _lang === 'zh' ? 'zh-CN' : _lang === 'ja' ? 'ja' : 'en';
-  updateLangButtons();
 }

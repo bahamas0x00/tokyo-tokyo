@@ -41,6 +41,16 @@ const Game = (() => {
     setInterval(UI.updateClock, 1000);
     if (Save.hasSave()) document.getElementById('btn-continue').disabled = false;
 
+    // 语言选择界面：已选过则直接进标题，否则保留语言选择界面
+    document.querySelectorAll('.lang-opt').forEach(btn => {
+      btn.addEventListener('click', () => {
+        setLang(btn.dataset.lang);
+        if (player) { renderShops(); UI.updateStats(player); }
+        UI.show('title');
+      });
+    });
+    if (langChosen()) UI.show('title');
+
     document.getElementById('btn-new').addEventListener('click', () => UI.show('create'));
     document.getElementById('btn-continue').addEventListener('click', () => {
       const d = Save.read(); if (d) loadGame(d);
@@ -58,10 +68,7 @@ const Game = (() => {
       if (c && Save.importCode(c)) { UI.toast(t('toast.import_ok')); loadGame(Save.read()); }
       else if (c) UI.toast(t('toast.import_fail'));
     });
-    document.getElementById('btn-lang').addEventListener('click', () => {
-      setLang(cycleLang());
-      if (player) { renderShops(); UI.updateStats(player); }
-    });
+    document.getElementById('btn-lang').addEventListener('click', () => UI.show('lang'));
     document.getElementById('btn-start-game').addEventListener('click', startNew);
     document.getElementById('player-name-input').addEventListener('keydown', e => {
       if (e.key === 'Enter') startNew();
@@ -105,10 +112,6 @@ const Game = (() => {
     });
     document.getElementById('btn-to-title').addEventListener('click', () => {
       save(); UI.show('title');
-    });
-    document.getElementById('btn-lang-game').addEventListener('click', () => {
-      setLang(cycleLang());
-      if (player) { renderShops(); UI.updateStats(player); }
     });
   }
 

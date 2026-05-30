@@ -12,8 +12,21 @@
   <div class="scanlines"></div>
   <div id="app">
 
+    <!-- ── 语言选择（首次加载） ── -->
+    <div id="screen-lang" class="screen active">
+      <div class="lang-select-box">
+        <div class="lang-select-title neon-cyan">SELECT LANGUAGE</div>
+        <div class="lang-select-sub">言語 / 语言 / Language</div>
+        <div class="lang-select-list">
+          <button class="menu-btn lang-opt" data-lang="zh">中文</button>
+          <button class="menu-btn lang-opt" data-lang="ja">日本語</button>
+          <button class="menu-btn lang-opt" data-lang="en">English</button>
+        </div>
+      </div>
+    </div>
+
     <!-- ── 标题 ── -->
-    <div id="screen-title" class="screen active">
+    <div id="screen-title" class="screen">
       <div class="title-art">
         <div class="title-jp neon-pink">東京社畜</div>
         <div class="title-sub neon-cyan">TOKYO SHACHO</div>
@@ -24,7 +37,7 @@
         <button class="menu-btn" id="btn-continue" disabled data-i18n="title.continue">[ 继续 ]</button>
         <button class="menu-btn secondary" id="btn-export" data-i18n="title.export">[ 导出存档 ]</button>
         <button class="menu-btn secondary" id="btn-import" data-i18n="title.import">[ 导入存档 ]</button>
-        <button class="menu-btn secondary" id="btn-lang" style="font-size:10px;padding:6px 12px" data-i18n="lang.toggle">EN</button>
+        <button class="menu-btn secondary" id="btn-lang" style="font-size:10px;padding:6px 12px" data-i18n="lang.change">🌐 言語</button>
       </div>
       <div class="title-time">
         <span class="neon-cyan" data-i18n="title.time">🗼 东京时间</span>
@@ -96,7 +109,6 @@
           </button>
           <button class="menu-btn secondary small" id="btn-save" data-i18n="btn.save">[ 存档 ]</button>
           <button class="menu-btn secondary small" id="btn-to-title" data-i18n="btn.title">[ 主页 ]</button>
-          <button class="menu-btn secondary small" id="btn-lang-game" style="font-size:9px;padding:4px 8px" data-i18n="lang.toggle">EN</button>
         </div>
       </aside>
 
