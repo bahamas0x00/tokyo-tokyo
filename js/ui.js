@@ -8,14 +8,15 @@ const UI = (() => {
 
   // ── stats ──────────────────────────────────────────────────
   function updateStats(p) {
-    setText('hdr-name',    p.name);
-    setText('hdr-title',   p.title);
-    setText('hdr-day',     p.day);
-    setText('hdr-clock',   tokyoTimeStr());
-    setText('val-money',   fmtMoney(p.money));
-    setText('val-total',   fmtMoney(p.totalEarned));
-    setText('val-click',   '¥' + p.clickValue);
-    setText('val-passive', fmtMoney(p.passivePerSec) + '/s');
+    setText('hdr-name',       p.name);
+    setText('hdr-title',      p.title);
+    setText('hdr-day',        p.day);
+    setText('hdr-clock',      tokyoTimeStr());
+    setText('val-money',      fmtMoney(p.money));
+    setText('val-total',      fmtMoney(p.totalEarned));
+    setText('val-click',      '¥' + p.clickValue);
+    setText('val-passive',    fmtMoney(p.passivePerSec) + '/s');
+    setText('val-click-rate', '¥' + p.clickValue + '/CLICK');
     setBar('bar-energy',    p.energy);
     setBar('bar-health',    p.health);
     setBar('bar-happiness', p.happiness);
@@ -25,6 +26,44 @@ const UI = (() => {
     updateConfig(p);
     updatePortfolio(p, window._onSellCallback);
     updateMarket(p);
+    updateTeamPanel(p);
+  }
+
+  // ── team panel ─────────────────────────────────────────────
+  const KOHAI_STATUSES = ['バグ修正中…', 'コードレビュー', '資料作成中', 'ミーティング', '残業中…', 'お茶汲み'];
+  const KOHAI_SVG = `<svg class="kohai-char" width="36" height="40" viewBox="0 0 9 10" style="image-rendering:pixelated">
+    <rect x="2" y="0" width="5" height="1" fill="#3d2b1f"/>
+    <rect x="2" y="1" width="5" height="3" fill="#f7a072"/>
+    <rect x="3" y="2" width="1" height="1" fill="#1a1a2e"/>
+    <rect x="5" y="2" width="1" height="1" fill="#1a1a2e"/>
+    <rect x="1" y="4" width="7" height="3" fill="#54a0ff"/>
+    <rect x="3" y="4" width="3" height="3" fill="#feca57"/>
+    <rect x="0" y="5" width="1" height="2" fill="#f7a072"/>
+    <rect x="8" y="5" width="1" height="2" fill="#f7a072"/>
+    <rect x="2" y="7" width="2" height="3" fill="#1a1a2e"/>
+    <rect x="5" y="7" width="2" height="3" fill="#1a1a2e"/>
+  </svg>`;
+
+  function updateTeamPanel(p) {
+    const el = document.getElementById('team-members-display');
+    if (!el) return;
+    const count = p.autoStaff?.kohai || 0;
+    if (count === 0) {
+      el.innerHTML = `<span style="font-size:11px;color:var(--dim)">目前只有你一个人……</span>`;
+      return;
+    }
+    const names = ['田中','铃木','佐藤','高桥','渡边','中村','小林','加藤','吉田','山田'];
+    const html = Array.from({ length: Math.min(count, 8) }, (_, i) => {
+      const name   = names[i % names.length];
+      const status = KOHAI_STATUSES[(i + Math.floor(Date.now()/5000)) % KOHAI_STATUSES.length];
+      return `<div class="team-member">
+        ${KOHAI_SVG}
+        <div class="team-member-name">${name}</div>
+        <div class="team-member-status">${status}</div>
+      </div>`;
+    }).join('');
+    const more = count > 8 ? `<div class="team-member"><div style="font-family:var(--font-px);font-size:8px;color:var(--dim)">+${count-8}人</div></div>` : '';
+    el.innerHTML = html + more;
   }
 
   function setBar(id, val) {

@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>東京社畜</title>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
-  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@300;400;700&family=Share+Tech+Mono&display=swap" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Noto+Sans+JP:wght@400;700&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="style.css" />
 </head>
 <body>
@@ -106,15 +106,54 @@
           <span class="mono dim">DAY </span><span class="neon-pink mono" id="hdr-day">1</span>
         </div>
 
-        <!-- 点击主区域 -->
-        <div class="click-area">
-          <div class="click-label dim">株式会社ブラック商事 / 開発部</div>
-          <button id="btn-click" class="click-btn">
-            <span class="click-emoji">💻</span>
-            <span class="click-text">敲 代 码</span>
-            <span class="click-hint">CLICK</span>
-          </button>
-          <div class="click-total">累计产出：<span id="val-total" class="neon-pink">¥0</span></div>
+        <!-- 像素办公室点击区 -->
+        <div class="pixel-office" id="btn-click">
+          <!-- 主角（小组长） -->
+          <div class="px-worker-wrap">
+            <svg id="px-main-worker" class="px-character" width="64" height="72" viewBox="0 0 16 18" style="image-rendering:pixelated">
+              <!-- hair -->
+              <rect x="4" y="0" width="8" height="2" fill="#3d2b1f"/>
+              <rect x="3" y="1" width="10" height="3" fill="#3d2b1f"/>
+              <!-- face -->
+              <rect x="3" y="3" width="10" height="6" fill="#f7a072"/>
+              <!-- eyes -->
+              <rect x="4" y="5" width="2" height="2" fill="#1a1a2e"/>
+              <rect x="10" y="5" width="2" height="2" fill="#1a1a2e"/>
+              <!-- smile -->
+              <rect x="5" y="8" width="6" height="1" fill="#c0392b"/>
+              <!-- shirt -->
+              <rect x="2" y="9" width="12" height="5" fill="#e8e8f0"/>
+              <!-- tie -->
+              <rect x="7" y="9" width="2" height="5" fill="#ff6b6b"/>
+              <!-- arms -->
+              <rect x="0" y="10" width="2" height="3" fill="#f7a072"/>
+              <rect x="14" y="10" width="2" height="3" fill="#f7a072"/>
+              <!-- pants -->
+              <rect x="4" y="14" width="8" height="3" fill="#2d3561"/>
+              <!-- shoes -->
+              <rect x="3" y="16" width="4" height="2" fill="#1a1a2e"/>
+              <rect x="9" y="16" width="4" height="2" fill="#1a1a2e"/>
+            </svg>
+            <div class="px-desk"></div>
+            <div class="px-worker-label" id="player-role-label">小 组 长</div>
+          </div>
+
+          <div class="click-info">
+            <div id="val-click-rate" class="neon-gold px" style="font-size:8px">¥100/CLICK</div>
+            <div class="dim" style="font-family:var(--font-px);font-size:7px;margin-top:3px">CLICK TO CODE</div>
+          </div>
+        </div>
+
+        <!-- 团队面板（后辈展示） -->
+        <div class="team-panel" id="team-panel">
+          <div class="team-panel-title">チーム（被压榨成员）</div>
+          <div class="team-members" id="team-members-display">
+            <span style="font-size:11px;color:var(--dim)">目前只有你一个人……</span>
+          </div>
+        </div>
+
+        <div class="click-total px" style="font-size:8px;flex-shrink:0">
+          TOTAL: <span id="val-total" class="neon-gold">¥0</span>
         </div>
 
         <!-- 事件弹窗 -->

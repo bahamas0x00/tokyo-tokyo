@@ -82,7 +82,7 @@ const Game = (() => {
     startLoop();
     bindGameButtons();
 
-    // click button
+    // pixel office click area
     document.getElementById('btn-click').addEventListener('click', handleClick);
   }
 
@@ -122,6 +122,12 @@ const Game = (() => {
     if (player.energy < 1) { UI.toast('体力耗尽，先去休息吧'); return; }
     const earned = player.click();
     UI.spawnFloat(earned);
+    // 打字动画
+    const worker = document.getElementById('px-main-worker');
+    if (worker) {
+      worker.classList.add('typing');
+      setTimeout(() => worker.classList.remove('typing'), 400);
+    }
     UI.updateStats(player);
   }
 
