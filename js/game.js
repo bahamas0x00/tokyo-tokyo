@@ -2,216 +2,244 @@
 
 const Game = (() => {
   let player = null;
-  let locked = false;
-  let autoSaveTimer = null;
+  let eventActive = false;
+  let fujokuVisits = 0;
 
-  // ── init ──────────────────────────────────────────────────
+  // ── 风俗店故事序列 ────────────────────────────────────────
+  const FUJOKU_STORIES = [
+    {
+      text: '电梯门打开的时候，你们同时愣了一下。\n\n她比照片里更普通，穿着便服，抱着一个包，\n像是刚下班的OL。\n\n你知道她是谁。她不知道你是谁。\n楼层数字往上走，你们保持着陌生人的距离。',
+      choices: [{ label: '什么都没说，盯着门', reply: '她先出了电梯，你跟在后面，走进了同一扇门。\n她转过身，愣了两秒，然后职业性地笑了。\n"啊，是您。"\n你不知道该说什么，也笑了。', changes: {}, tone: 'neutral' }],
+    },
+    {
+      text: '洗完澡，她没有说话，\n只是侧躺过来，把头靠在你旁边。\n\n像一只猫。\n\n你低下头，吻了她。\n是真的吻，不是那种。\n她没有躲。',
+      choices: [{ label: '什么都没说', reply: '这是你来东京以来第一次觉得不孤独。\n你知道这不是真的。\n但今晚不想在意这些。', changes: { happiness: 15 }, tone: 'good' }],
+    },
+    {
+      text: '出门前你问她能不能加LINE。\n她把二维码给你扫了。\n\n此后偶尔会有消息。\n"下周四有出勤哦～"  一个笑脸。\n\n她在演戏。你当真了。\n你知道你当真了。\n你没有办法。',
+      choices: [
+        { label: '回复了一个笑脸', reply: '她秒回了一个"✨"。\n你看着这个符号很久。', changes: { happiness: -5 }, tone: 'neutral' },
+        { label: '没有回复，把手机放下', reply: '你知道有些事看清楚了就别再看了。\n你还是留着那条LINE。', changes: { happiness: -10 }, tone: 'bad' },
+      ],
+    },
+  ];
+
+  // ── init ─────────────────────────────────────────────────
   function init() {
     UI.updateClock();
     setInterval(UI.updateClock, 1000);
+    if (Save.hasSave()) document.getElementById('btn-continue').disabled = false;
 
-    bindTitle();
-    bindCreate();
-    bindGame();
-
-    if (Save.hasSave()) {
-      document.getElementById('btn-continue').disabled = false;
-    }
-  }
-
-  // ── title ─────────────────────────────────────────────────
-  function bindTitle() {
     document.getElementById('btn-new').addEventListener('click', () => UI.show('create'));
     document.getElementById('btn-continue').addEventListener('click', () => {
-      const data = Save.read();
-      if (data) loadGame(data);
+      const d = Save.read(); if (d) loadGame(d);
     });
     document.getElementById('btn-export').addEventListener('click', () => {
-      const code = Save.exportCode();
-      if (!code) return UI.toast('没有存档可导出');
-      navigator.clipboard.writeText(code).then(
-        () => UI.toast('存档码已复制到剪贴板 ✓'),
-        () => prompt('复制这段存档码：', code)
+      const c = Save.exportCode();
+      if (!c) return UI.toast('没有存档');
+      navigator.clipboard.writeText(c).then(
+        () => UI.toast('存档码已复制 ✓'),
+        () => prompt('复制存档码：', c)
       );
     });
     document.getElementById('btn-import').addEventListener('click', () => {
-      const code = prompt('粘贴存档码：');
-      if (!code) return;
-      if (Save.importCode(code)) {
-        UI.toast('存档导入成功 ✓');
-        const data = Save.read();
-        if (data) { loadGame(data); }
-      } else {
-        UI.toast('存档码无效');
-      }
+      const c = prompt('粘贴存档码：');
+      if (c && Save.importCode(c)) { UI.toast('导入成功 ✓'); loadGame(Save.read()); }
+      else if (c) UI.toast('存档码无效');
     });
-  }
-
-  // ── create ────────────────────────────────────────────────
-  function bindCreate() {
     document.getElementById('btn-start-game').addEventListener('click', startNew);
     document.getElementById('player-name-input').addEventListener('keydown', e => {
       if (e.key === 'Enter') startNew();
     });
   }
 
+  // ── new / load ────────────────────────────────────────────
   function startNew() {
-    const input = document.getElementById('player-name-input');
-    const name  = input.value.trim();
-    const err   = document.getElementById('create-error');
-    if (!name) {
-      err.textContent = '请输入你的名字。';
-      err.classList.remove('hidden');
-      return;
-    }
-    if (Save.hasSave() && !confirm('已有存档，确定覆盖吗？')) return;
+    const name = document.getElementById('player-name-input').value.trim();
+    const err  = document.getElementById('create-error');
+    if (!name) { err.textContent = '请输入名字'; err.classList.remove('hidden'); return; }
+    if (Save.hasSave() && !confirm('已有存档，确定覆盖？')) return;
     err.classList.add('hidden');
     player = new Player(name);
-    saveGame();
     enterGame();
   }
 
-  // ── load ──────────────────────────────────────────────────
   function loadGame(data) {
     player = Player.fromJSON(data);
+    fujokuVisits = data.fujokuVisits || 0;
     enterGame();
-    UI.clearLog();
-    player.eventLog.forEach(e => UI.appendLog(e.text, e.tone));
   }
 
   // ── enter game ────────────────────────────────────────────
   function enterGame() {
     UI.show('game');
-    UI.updateStats(player);
-    UI.updatePhaseIndicators(player);
-    startAutoSave();
-    showPhaseEvent();
+    renderShops();
+    startLoop();
+    bindGameButtons();
+
+    // click button
+    document.getElementById('btn-click').addEventListener('click', handleClick);
   }
 
-  // ── auto-save (Cookie Clicker style) ──────────────────────
-  function startAutoSave() {
-    clearInterval(autoSaveTimer);
-    autoSaveTimer = setInterval(() => {
-      saveGame();
-      UI.toast('自动存档 ✓', 1200);
-    }, 60000);
-  }
-
-  function saveGame() {
-    if (player) Save.write(player.toJSON());
-  }
-
-  // ── game buttons ──────────────────────────────────────────
-  function bindGame() {
+  function bindGameButtons() {
     document.getElementById('btn-save').addEventListener('click', () => {
-      saveGame();
-      UI.toast('存档完成 ✓');
+      save(); UI.toast('存档完成 ✓');
     });
     document.getElementById('btn-to-title').addEventListener('click', () => {
-      saveGame();
-      clearInterval(autoSaveTimer);
-      UI.show('title');
-      document.getElementById('btn-continue').disabled = false;
+      save(); UI.show('title');
     });
   }
 
-  // ── phase logic ───────────────────────────────────────────
-  function showPhaseEvent() {
-    const phase   = currentPhase();
-    const textEl  = document.getElementById('event-text');
-    const phaseTag = document.getElementById('event-phase-tag');
-    const phaseNames = { morning: '── 通勤 · 朝 ──', work: '── 業務中 ──', evening: '── 夜の部 ──', night: '── 深夜 ──' };
-    if (phaseTag) phaseTag.textContent = phaseNames[phase];
-
-    if (player.hasClaimedPhase(phase)) {
-      locked = false;
-      UI.typewrite(textEl, waitMessage(phase), 18);
-      document.getElementById('choice-area').innerHTML = '';
-      return;
-    }
-
-    locked = true;
-    const event = getEvent(phase);
-    UI.typewrite(textEl, event.text, 22, () => {
-      locked = false;
-      UI.renderChoices(event.choices, choice => resolveChoice(phase, event, choice));
-    });
-  }
-
-  function resolveChoice(phase, event, choice) {
-    if (locked) return;
-    locked = true;
-
-    player.modify(choice.changes || {});
-    player.claimPhase(phase);
-
-    const logText = (choice.reply || event.text).split('\n')[0];
-    const tone    = choice.tone || event.tone || 'neutral';
-    player.addLog(logText, tone);
-
-    const textEl = document.getElementById('event-text');
-
-    if (choice.reply) {
-      UI.typewrite(textEl, choice.reply, 22, () => {
-        locked = false;
-        UI.appendLog(logText, tone);
-        UI.updateStats(player);
-        UI.updatePhaseIndicators(player);
-        saveGame();
-        setTimeout(showPhaseEvent, 500);
-      });
-    } else {
-      locked = false;
-      UI.appendLog(logText, tone);
-      UI.updateStats(player);
-      UI.updatePhaseIndicators(player);
-      saveGame();
-      setTimeout(showPhaseEvent, 300);
-    }
-  }
-
-  // ── wait message ──────────────────────────────────────────
-  function waitMessage(phase) {
-    const h  = tokyoHour();
-    const hh = String(h).padStart(2, '0');
-    const msgs = {
-      morning: [
-        `早晨的故事今天已经翻篇了。\n现在是东京时间 ${hh}:── \n等待下一个时段——业务中（09:00 JST）。`,
-        `你已经出门了。\n${hh}:── JST，上班的路正在进行中。`,
-      ],
-      work: [
-        `今天的工作时段已经处理完毕。\n${hh}:── JST——等待今晚 18:00 的夜の部。`,
-        `已经撑过了今天的业务时间。\n东京时间 ${hh}:──，等待下班。`,
-      ],
-      evening: [
-        `今晚的故事已经发生过了。\n${hh}:── JST——等待深夜时分（23:00）。`,
-        `夜の部已结束。\n等待深夜降临。`,
-      ],
-      night: [
-        `今天的最后一幕已经落幕。\n${hh}:── JST——等待明天早晨（06:00）的新一天。`,
-        `睡吧，或者继续熬着——\n明天一样会来。`,
-      ],
-    };
-    const pool = msgs[phase];
-    return pool[Math.floor(Math.random() * pool.length)];
-  }
-
-  // ── phase auto-refresh ────────────────────────────────────
-  function watchPhase() {
-    let last = currentPhase();
+  // ── main loop ─────────────────────────────────────────────
+  function startLoop() {
+    // tick every second
     setInterval(() => {
-      const cur = currentPhase();
-      if (cur !== last) {
-        last = cur;
-        if (player) showPhaseEvent();
-      }
-    }, 30000);
+      player.tick();
+      UI.updateStats(player);
+      renderShops();
+      checkEvent();
+      checkMarketEvent();
+    }, 1000);
+
+    // auto-save every 60s
+    setInterval(() => { save(); UI.toast('自动存档 ✓', 1200); }, 60000);
+
+    // market fluctuation every 5-15 min
+    scheduleMarket();
   }
 
-  return { init, watchPhase };
+  // ── click ─────────────────────────────────────────────────
+  function handleClick() {
+    if (player.energy < 1) { UI.toast('体力耗尽，先去休息吧'); return; }
+    const earned = player.click();
+    UI.spawnFloat(earned);
+    UI.updateStats(player);
+  }
+
+  // ── shops ─────────────────────────────────────────────────
+  function renderShops() {
+    UI.renderInvestShop(player, key => {
+      if (player.buyInvestment(key)) {
+        const inv = INVESTMENTS[key];
+        UI.appendLog(`买入 ${inv.emoji} ${inv.label}`, 'good');
+        UI.toast(`购入 ${inv.label} ✓`);
+        UI.updateStats(player);
+        renderShops();
+        save();
+      } else {
+        UI.toast('余额不足');
+      }
+    });
+
+    UI.renderUpgradeShop(player, id => {
+      const u = UPGRADES.find(u => u.id === id);
+      if (player.buyUpgrade(id)) {
+        UI.appendLog(`升级 ${u.emoji} ${u.label}`, 'good');
+        UI.toast(`${u.label} 已升级 ✓`);
+        UI.updateStats(player);
+        renderShops();
+        save();
+      } else {
+        UI.toast('余额不足');
+      }
+    });
+
+    UI.renderLifeShop(player, id => {
+      if (id === 'fujoku') { buyFujoku(); return; }
+      const item = SHOP_ITEMS.find(s => s.id === id);
+      if (!item) return;
+      if (!player.canAfford(item.cost)) { UI.toast('余额不足'); return; }
+      if (!player.canUseShop(id, item.cooldown)) { UI.toast('冷却中，稍后再来'); return; }
+      player.buyShopItem(id);
+      UI.appendLog(`${item.emoji} ${item.reply || item.label}`, item.tone);
+      UI.toast(`${item.emoji} ${item.label}`);
+      UI.updateStats(player);
+      renderShops();
+      save();
+    });
+  }
+
+  // ── 风俗店购买 → 触发故事事件 ────────────────────────────
+  function buyFujoku() {
+    const item = SHOP_ITEMS.find(s => s.id === 'fujoku');
+    if (!player.canAfford(item.cost)) { UI.toast('余额不足'); return; }
+    player.money    -= item.cost;
+    player.happiness = clamp(player.happiness + 40, 0, 100);
+    player.health    = clamp(player.health    - 3,  0, 100);
+
+    const story = FUJOKU_STORIES[fujokuVisits % FUJOKU_STORIES.length];
+    fujokuVisits++;
+    player.fujokuVisits = fujokuVisits;
+
+    eventActive = true;
+    UI.showEventPopup(story, choice => {
+      player.modify(choice.changes || {});
+      UI.appendLog('🏩 ' + (choice.reply || '').split('\n')[0], choice.tone);
+      UI.updateStats(player);
+      renderShops();
+      save();
+      eventActive = false;
+      player.scheduleNextEvent();
+    });
+  }
+
+  // ── 随机事件 ─────────────────────────────────────────────
+  function checkEvent() {
+    if (eventActive) return;
+    if (Date.now() < player.nextEventAt) return;
+    eventActive = true;
+    const event = getRandomEvent();
+    UI.showEventPopup(event, choice => {
+      player.modify(choice.changes || {});
+      if (choice.money) player.money += choice.money;
+      UI.appendLog((choice.reply || event.text).split('\n')[0], choice.tone);
+      UI.updateStats(player);
+      renderShops();
+      save();
+      eventActive = false;
+      player.scheduleNextEvent();
+    });
+  }
+
+  // ── 市场波动 ─────────────────────────────────────────────
+  let marketTimer = null;
+  function scheduleMarket() {
+    clearTimeout(marketTimer);
+    const delay = 5 * 60000 + Math.random() * 10 * 60000; // 5-15分钟
+    marketTimer = setTimeout(() => { triggerMarketEvent(); scheduleMarket(); }, delay);
+  }
+
+  function checkMarketEvent() {} // handled by scheduleMarket
+
+  function triggerMarketEvent() {
+    const ev = MARKET_EVENTS[Math.floor(Math.random() * MARKET_EVENTS.length)];
+    if (ev.affects === 'all') {
+      player.market.bonds  = clamp2(player.market.bonds  * ev.mult, 0.2, 3.0);
+      player.market.stocks = clamp2(player.market.stocks * ev.mult, 0.2, 3.0);
+      player.market.btc    = clamp2(player.market.btc    * ev.mult, 0.05, 5.0);
+    } else {
+      player.market[ev.affects] = clamp2(player.market[ev.affects] * ev.mult,
+        ev.affects === 'btc' ? 0.05 : 0.2,
+        ev.affects === 'btc' ? 5.0  : 3.0
+      );
+    }
+    // 比特币归零事件（极低概率）
+    if (ev.affects === 'btc' && player.market.btc < 0.1 && player.portfolio.btc > 0) {
+      UI.appendLog('₿ 比特币崩盘！你的持仓几乎归零。', 'bad');
+    }
+    UI.showMarketNews(ev.text, ev.tone);
+    UI.updateStats(player);
+  }
+
+  // ── save ─────────────────────────────────────────────────
+  function save() {
+    if (player) Save.write({ ...player.toJSON(), fujokuVisits });
+  }
+
+  return { init };
 })();
 
-document.addEventListener('DOMContentLoaded', () => {
-  Game.init();
-  Game.watchPhase();
-});
+function clamp(v, lo, hi) { return Math.max(lo, Math.min(hi, v)); }
+function clamp2(v, lo, hi) { return Math.max(lo, Math.min(hi, v)); }
+
+document.addEventListener('DOMContentLoaded', () => Game.init());

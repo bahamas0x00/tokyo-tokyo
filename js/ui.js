@@ -6,9 +6,181 @@ const UI = (() => {
     document.getElementById('screen-' + id).classList.add('active');
   }
 
-  // ── typewriter ────────────────────────────────────────────
+  // ── stats ──────────────────────────────────────────────────
+  function updateStats(p) {
+    setText('hdr-name',    p.name);
+    setText('hdr-title',   p.title);
+    setText('hdr-day',     p.day);
+    setText('hdr-clock',   tokyoTimeStr());
+    setText('val-money',   fmtMoney(p.money));
+    setText('val-total',   fmtMoney(p.totalEarned));
+    setText('val-click',   '¥' + p.clickValue);
+    setText('val-passive', fmtMoney(p.passivePerSec) + '/s');
+    setBar('bar-energy',    p.energy);
+    setBar('bar-health',    p.health);
+    setBar('bar-happiness', p.happiness);
+    setText('val-energy',    Math.floor(p.energy));
+    setText('val-health',    Math.floor(p.health));
+    setText('val-happiness', Math.floor(p.happiness));
+    updatePortfolio(p);
+    updateMarket(p);
+  }
+
+  function setBar(id, val) {
+    const el = document.getElementById(id);
+    if (!el) return;
+    const pct = Math.max(0, Math.min(100, val));
+    el.style.width = pct + '%';
+    el.style.filter = pct <= 20 ? 'hue-rotate(200deg) brightness(1.4)'
+                    : pct <= 40 ? 'hue-rotate(80deg)'
+                    : '';
+  }
+
+  function setText(id, val) {
+    const el = document.getElementById(id);
+    if (el) el.textContent = val;
+  }
+
+  function updatePortfolio(p) {
+    const el = document.getElementById('portfolio-display');
+    if (!el) return;
+    const rows = Object.entries(INVESTMENTS).map(([key, inv]) => {
+      const count = p.portfolio[key] || 0;
+      const perSec = count * inv.basePerSec * p.market[key];
+      if (count === 0) return '';
+      return `<div class="portfolio-row">
+        <span>${inv.emoji} ${inv.label}</span>
+        <span class="neon-cyan">×${count}</span>
+        <span class="neon-green">${fmtMoney(perSec)}/s</span>
+      </div>`;
+    }).join('');
+    el.innerHTML = rows || '<div class="dim small">尚无投资</div>';
+  }
+
+  function updateMarket(p) {
+    const el = document.getElementById('market-display');
+    if (!el) return;
+    el.innerHTML = Object.entries(INVESTMENTS).map(([key, inv]) => {
+      const m   = p.market[key];
+      const pct = ((m - 1) * 100).toFixed(0);
+      const cls = m >= 1 ? 'neon-green' : 'neon-pink';
+      const sign = m >= 1 ? '+' : '';
+      return `<div class="market-row">
+        <span>${inv.emoji} ${inv.label}</span>
+        <span class="${cls}">${sign}${pct}%</span>
+      </div>`;
+    }).join('');
+  }
+
+  // ── shops ──────────────────────────────────────────────────
+  function renderInvestShop(p, onBuy) {
+    const el = document.getElementById('invest-shop');
+    if (!el) return;
+    el.innerHTML = Object.entries(INVESTMENTS).map(([key, inv]) => {
+      const canAfford = p.money >= inv.price;
+      const count = p.portfolio[key] || 0;
+      return `<div class="shop-item ${canAfford ? '' : 'locked'}">
+        <div class="shop-item-header">
+          <span>${inv.emoji} ${inv.label}</span>
+          <span class="shop-count">×${count}</span>
+        </div>
+        <div class="shop-item-desc">${inv.desc}</div>
+        <div class="shop-item-footer">
+          <span class="shop-yield neon-green">${fmtMoney(inv.basePerSec)}/s</span>
+          <span class="shop-risk dim">${inv.riskLabel}</span>
+          <button class="shop-btn ${canAfford ? '' : 'disabled'}" data-key="${key}">${fmtMoney(inv.price)}</button>
+        </div>
+      </div>`;
+    }).join('');
+    el.querySelectorAll('.shop-btn:not(.disabled)').forEach(btn => {
+      btn.addEventListener('click', () => onBuy(btn.dataset.key));
+    });
+  }
+
+  function renderUpgradeShop(p, onBuy) {
+    const el = document.getElementById('upgrade-shop');
+    if (!el) return;
+    el.innerHTML = UPGRADES.map(u => {
+      const count     = p.clickUpgrades[u.id] || 0;
+      const canAfford = p.money >= u.cost;
+      return `<div class="shop-item ${canAfford ? '' : 'locked'}">
+        <div class="shop-item-header">
+          <span>${u.emoji} ${u.label}</span>
+          <span class="shop-count">×${count}</span>
+        </div>
+        <div class="shop-item-desc">${u.desc}</div>
+        <div class="shop-item-footer">
+          <span class="shop-yield neon-cyan">+¥${u.bonus}/click</span>
+          <button class="shop-btn ${canAfford ? '' : 'disabled'}" data-id="${u.id}">${fmtMoney(u.cost)}</button>
+        </div>
+      </div>`;
+    }).join('');
+    el.querySelectorAll('.shop-btn:not(.disabled)').forEach(btn => {
+      btn.addEventListener('click', () => onBuy(btn.dataset.id));
+    });
+  }
+
+  function renderLifeShop(p, onBuy) {
+    const el = document.getElementById('life-shop');
+    if (!el) return;
+    el.innerHTML = SHOP_ITEMS.map(item => {
+      const canAfford = p.money >= item.cost;
+      const onCooldown = !p.canUseShop(item.id, item.cooldown);
+      const disabled  = !canAfford || onCooldown;
+      const cooldownLabel = onCooldown ? ' (冷却中)' : '';
+      return `<div class="shop-item ${disabled ? 'locked' : ''}">
+        <div class="shop-item-header">
+          <span>${item.emoji} ${item.label}${cooldownLabel}</span>
+        </div>
+        <div class="shop-item-desc">${item.desc}</div>
+        <div class="shop-item-footer">
+          <button class="shop-btn ${disabled ? 'disabled' : ''}" data-id="${item.id}">
+            ${item.cost === 0 ? '免费' : fmtMoney(item.cost)}
+          </button>
+        </div>
+      </div>`;
+    }).join('');
+    el.querySelectorAll('.shop-btn:not(.disabled)').forEach(btn => {
+      btn.addEventListener('click', () => onBuy(btn.dataset.id));
+    });
+  }
+
+  // ── event popup ────────────────────────────────────────────
   let _tw = null;
-  function typewrite(el, text, speed = 24, onDone) {
+  function showEventPopup(event, onChoice) {
+    const popup = document.getElementById('event-popup');
+    const textEl = document.getElementById('popup-text');
+    const choicesEl = document.getElementById('popup-choices');
+    popup.classList.remove('hidden');
+    choicesEl.innerHTML = '';
+    typewrite(textEl, event.text, 20, () => {
+      const choices = event.choices && event.choices.length ? event.choices
+        : [{ label: '── 继续 ──', reply: '', changes: {}, tone: 'neutral' }];
+      choices.forEach(c => {
+        const btn = document.createElement('button');
+        btn.className = 'choice-btn';
+        btn.textContent = c.label;
+        btn.addEventListener('click', () => {
+          choicesEl.innerHTML = '';
+          if (c.reply) {
+            typewrite(textEl, c.reply, 20, () => {
+              setTimeout(() => { popup.classList.add('hidden'); onChoice(c); }, 1200);
+            });
+          } else {
+            popup.classList.add('hidden');
+            onChoice(c);
+          }
+        });
+        choicesEl.appendChild(btn);
+      });
+    });
+  }
+
+  function hideEventPopup() {
+    document.getElementById('event-popup').classList.add('hidden');
+  }
+
+  function typewrite(el, text, speed = 20, onDone) {
     if (_tw) clearTimeout(_tw);
     el.textContent = '';
     let i = 0;
@@ -24,109 +196,54 @@ const UI = (() => {
     tick();
   }
 
-  // ── stats ─────────────────────────────────────────────────
-  function updateStats(player) {
-    setText('hdr-name',    player.name);
-    setText('hdr-title',   player.title);
-    setText('hdr-day',     player.day);
-    setText('hdr-company', player.company);
-    setBar('bar-energy',    player.energy);
-    setBar('bar-health',    player.health);
-    setBar('bar-happiness', player.happiness);
-    setBar('bar-work',      player.work);
-    setText('val-energy',    player.energy);
-    setText('val-health',    player.health);
-    setText('val-happiness', player.happiness);
-    setText('val-work',      player.work);
-    setText('val-savings',   '¥ ' + player.savings.toLocaleString());
-    setText('val-salary',    '¥ ' + player.salary.toLocaleString());
+  // ── floating click number ──────────────────────────────────
+  function spawnFloat(amount) {
+    const btn = document.getElementById('btn-click');
+    if (!btn) return;
+    const el  = document.createElement('div');
+    el.className = 'float-num';
+    el.textContent = '+¥' + amount.toLocaleString();
+    const rect = btn.getBoundingClientRect();
+    el.style.left = (rect.left + rect.width / 2 + (Math.random() - 0.5) * 60) + 'px';
+    el.style.top  = (rect.top  - 10) + 'px';
+    document.body.appendChild(el);
+    setTimeout(() => el.remove(), 900);
   }
 
-  function setBar(id, val) {
-    const el = document.getElementById(id);
+  // ── market news banner ─────────────────────────────────────
+  function showMarketNews(text, tone) {
+    const el = document.getElementById('market-news');
     if (!el) return;
-    const pct = Math.max(0, Math.min(100, val));
-    el.style.width = pct + '%';
-    el.style.filter = pct <= 20 ? 'hue-rotate(200deg) brightness(1.3)'
-                    : pct <= 40 ? 'hue-rotate(80deg) brightness(1.1)'
-                    : '';
+    el.textContent = text;
+    el.className   = 'market-news ' + tone;
+    el.classList.remove('hidden');
+    setTimeout(() => el.classList.add('hidden'), 8000);
   }
 
-  function setText(id, val) {
-    const el = document.getElementById(id);
-    if (el) el.textContent = val;
+  // ── log ────────────────────────────────────────────────────
+  function appendLog(text, tone = 'neutral') {
+    const log = document.getElementById('event-log');
+    if (!log) return;
+    const e = document.createElement('div');
+    e.className = `log-entry ${tone}`;
+    e.innerHTML = `<span class="log-time">${tokyoTimeStr()}</span>${text.split('\n')[0]}`;
+    log.prepend(e);
+    while (log.children.length > 12) log.removeChild(log.lastChild);
   }
 
-  // ── phase indicators ──────────────────────────────────────
-  function updatePhaseIndicators(player) {
-    const phases = ['morning', 'work', 'evening', 'night'];
-    const labels  = { morning: '朝の通勤', work: '業務中', evening: '夜の部', night: '深夜' };
-    const today   = tokyoDateStr();
-    const claimed = player.claimedPhases[today] || [];
-    const active  = currentPhase();
-    const el = document.getElementById('phase-indicators');
-    if (!el) return;
-    el.innerHTML = phases.map(p => {
-      const done  = claimed.includes(p);
-      const cur   = !done && p === active;
-      const cls   = done ? 'done' : cur ? 'active' : '';
-      return `<div class="phase-item ${cls}">
-        <div class="phase-dot"></div>
-        <span>${labels[p]}</span>
-      </div>`;
-    }).join('');
-  }
-
-  // ── clock ─────────────────────────────────────────────────
+  // ── clock ──────────────────────────────────────────────────
   function updateClock() {
     const jst = new Date(new Date().toLocaleString('en-US', { timeZone: 'Asia/Tokyo' }));
     const hh  = String(jst.getHours()).padStart(2, '0');
     const mm  = String(jst.getMinutes()).padStart(2, '0');
     const ss  = String(jst.getSeconds()).padStart(2, '0');
-    const phaseNames = { morning: '朝', work: '業務中', evening: '夜', night: '深夜' };
-    const phaseTags  = { morning: '── 通勤 · 朝 ──', work: '── 業務中 ──', evening: '── 夜の部 ──', night: '── 深夜 ──' };
-    const phase = currentPhase();
-    setText('hdr-clock', `${hh}:${mm}`);
-    setText('hdr-phase', ` [${phaseNames[phase]}]`);
-    setText('event-phase-tag', phaseTags[phase]);
     setText('title-clock', `${hh}:${mm}:${ss}`);
+    setText('hdr-clock',   `${hh}:${mm}`);
   }
 
-  // ── choices ───────────────────────────────────────────────
-  function renderChoices(choices, onPick) {
-    const area = document.getElementById('choice-area');
-    area.innerHTML = '';
-    const list = (choices && choices.length) ? choices
-      : [{ label: '── 继续 ──', reply: '', changes: {}, tone: 'neutral' }];
-    list.forEach(c => {
-      const btn = document.createElement('button');
-      btn.className = 'choice-btn';
-      btn.textContent = c.label;
-      btn.addEventListener('click', () => { area.innerHTML = ''; onPick(c); });
-      area.appendChild(btn);
-    });
-  }
-
-  // ── log ───────────────────────────────────────────────────
-  function appendLog(text, tone) {
-    const log = document.getElementById('event-log');
-    if (!log) return;
-    const entry = document.createElement('div');
-    entry.className = `log-entry ${tone}`;
-    entry.innerHTML = `<span class="log-time">${tokyoTimeStr()}</span>${text.split('\n')[0]}`;
-    log.prepend(entry);
-    while (log.children.length > 10) log.removeChild(log.lastChild);
-  }
-
-  function clearLog() {
-    const el = document.getElementById('event-log');
-    if (el) el.innerHTML = '';
-  }
-
-  // ── toast ─────────────────────────────────────────────────
-  let _toastEl = null;
-  let _toastT  = null;
-  function toast(msg, ms = 2200) {
+  // ── toast ──────────────────────────────────────────────────
+  let _toastEl = null, _toastT = null;
+  function toast(msg, ms = 2000) {
     if (!_toastEl) {
       _toastEl = document.createElement('div');
       _toastEl.className = 'toast';
@@ -138,5 +255,10 @@ const UI = (() => {
     _toastT = setTimeout(() => _toastEl.classList.remove('show'), ms);
   }
 
-  return { show, typewrite, updateStats, updatePhaseIndicators, updateClock, renderChoices, appendLog, clearLog, toast };
+  return {
+    show, updateStats, updateClock,
+    renderInvestShop, renderUpgradeShop, renderLifeShop,
+    showEventPopup, hideEventPopup,
+    spawnFloat, showMarketNews, appendLog, toast,
+  };
 })();

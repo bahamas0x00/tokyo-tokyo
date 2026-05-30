@@ -38,10 +38,11 @@
         <div class="create-scene">
           <p>入职第一天。</p>
           <p>你跟着公司从F国搬来了这座城市。<br/>你不会日语，但合同已经签了。</p>
-          <p>请告诉我，你叫什么名字？</p>
+          <p>先从敲代码开始吧。</p>
+          <p style="color:#4a4a6a;font-size:12px;margin-top:12px;">（我只是个会点鼠标的猴子）</p>
         </div>
         <div class="name-input-row">
-          <input type="text" id="player-name-input" class="name-input" placeholder="输入你的名字" maxlength="12" />
+          <input type="text" id="player-name-input" class="name-input" placeholder="你的名字" maxlength="12" />
           <button class="menu-btn" id="btn-start-game">入 职 →</button>
         </div>
         <div id="create-error" class="error-msg hidden"></div>
@@ -49,87 +50,101 @@
     </div>
 
     <!-- ── 游戏主界面 ── -->
-    <div id="screen-game" class="screen">
-      <header class="game-header">
-        <div class="header-left">
+    <div id="screen-game" class="screen game-layout">
+
+      <!-- 左栏：状态 + 投资 -->
+      <aside class="left-panel">
+        <div class="panel-section">
+          <div class="panel-title">── 状 态 ──</div>
+          <div class="stat-row"><span class="stat-label">体力</span><div class="stat-bar-wrap"><div class="stat-bar" id="bar-energy" data-color="cyan"></div></div><span class="stat-val" id="val-energy">─</span></div>
+          <div class="stat-row"><span class="stat-label">健康</span><div class="stat-bar-wrap"><div class="stat-bar" id="bar-health" data-color="green"></div></div><span class="stat-val" id="val-health">─</span></div>
+          <div class="stat-row"><span class="stat-label">快乐</span><div class="stat-bar-wrap"><div class="stat-bar" id="bar-happiness" data-color="pink"></div></div><span class="stat-val" id="val-happiness">─</span></div>
+        </div>
+
+        <div class="panel-section">
+          <div class="panel-title">── 财 务 ──</div>
+          <div class="money-display" id="val-money">¥ 0</div>
+          <div class="money-sub">
+            <span class="dim">点击: </span><span id="val-click" class="neon-cyan">¥100</span>
+            <span class="dim"> &nbsp;/sec: </span><span id="val-passive" class="neon-green">¥0</span>
+          </div>
+        </div>
+
+        <div class="panel-section">
+          <div class="panel-title">── 投资组合 ──</div>
+          <div id="portfolio-display"></div>
+        </div>
+
+        <div class="panel-section">
+          <div class="panel-title">── 市场行情 ──</div>
+          <div id="market-display"></div>
+        </div>
+
+        <div class="panel-bottom">
+          <button class="menu-btn secondary small" id="btn-save">[ 存档 ]</button>
+          <button class="menu-btn secondary small" id="btn-to-title">[ 主页 ]</button>
+        </div>
+      </aside>
+
+      <!-- 中栏：点击区 + 事件 -->
+      <main class="center-panel">
+        <div class="game-header-bar">
           <span class="neon-pink mono" id="hdr-name">─</span>
-          <span class="hdr-sep">|</span>
+          <span class="dim">|</span>
           <span class="neon-cyan mono" id="hdr-title">新卒社員</span>
-          <span class="hdr-sep">|</span>
-          <span class="mono dim" id="hdr-company">株式会社ブラック商事</span>
+          <span class="dim">|</span>
+          <span class="mono dim" id="hdr-clock">──:──</span>
+          <span class="dim">|</span>
+          <span class="mono dim">DAY </span><span class="neon-pink mono" id="hdr-day">1</span>
         </div>
-        <div class="header-right">
-          <span class="mono dim">DAY </span>
-          <span class="neon-pink mono" id="hdr-day">1</span>
-          <span class="hdr-sep">|</span>
-          <span class="neon-cyan mono" id="hdr-clock">──:──</span>
-          <span class="mono dim" id="hdr-phase"> [深夜]</span>
+
+        <!-- 点击主区域 -->
+        <div class="click-area">
+          <div class="click-label dim">株式会社ブラック商事 / 開発部</div>
+          <button id="btn-click" class="click-btn">
+            <span class="click-emoji">💻</span>
+            <span class="click-text">敲 代 码</span>
+            <span class="click-hint">CLICK</span>
+          </button>
+          <div class="click-total">累计产出：<span id="val-total" class="neon-pink">¥0</span></div>
         </div>
-      </header>
 
-      <div class="game-body">
-        <!-- 左：状态 -->
-        <aside class="stats-panel">
-          <div class="stats-title">── 状态 ──</div>
+        <!-- 事件弹窗 -->
+        <div id="event-popup" class="event-popup hidden">
+          <div class="event-popup-tag" id="popup-tag">── 突发事件 ──</div>
+          <div class="event-popup-text" id="popup-text"></div>
+          <div class="event-popup-choices" id="popup-choices"></div>
+        </div>
 
-          <div class="stat-row">
-            <span class="stat-label">体力</span>
-            <div class="stat-bar-wrap"><div class="stat-bar" id="bar-energy" data-color="cyan"></div></div>
-            <span class="stat-val" id="val-energy">─</span>
-          </div>
-          <div class="stat-row">
-            <span class="stat-label">健康</span>
-            <div class="stat-bar-wrap"><div class="stat-bar" id="bar-health" data-color="green"></div></div>
-            <span class="stat-val" id="val-health">─</span>
-          </div>
-          <div class="stat-row">
-            <span class="stat-label">快乐</span>
-            <div class="stat-bar-wrap"><div class="stat-bar" id="bar-happiness" data-color="pink"></div></div>
-            <span class="stat-val" id="val-happiness">─</span>
-          </div>
-          <div class="stat-row">
-            <span class="stat-label">工作</span>
-            <div class="stat-bar-wrap"><div class="stat-bar" id="bar-work" data-color="orange"></div></div>
-            <span class="stat-val" id="val-work">─</span>
-          </div>
+        <!-- 市场新闻滚动 -->
+        <div id="market-news" class="market-news hidden"></div>
 
-          <div class="stats-sep"></div>
+        <!-- 日志 -->
+        <div class="log-area">
+          <div class="log-title">── 今日记录 ──</div>
+          <div id="event-log"></div>
+        </div>
+      </main>
 
-          <div class="stat-money">
-            <span class="stat-label">存款</span>
-            <span class="neon-cyan mono" id="val-savings">¥ ─</span>
-          </div>
-          <div class="stat-money">
-            <span class="stat-label">月薪</span>
-            <span class="mono dim" id="val-salary">¥ ─</span>
-          </div>
+      <!-- 右栏：商店 -->
+      <aside class="right-panel">
+        <div class="panel-section">
+          <div class="panel-title">── 投 资 ──</div>
+          <div id="invest-shop"></div>
+        </div>
 
-          <div class="stats-sep"></div>
+        <div class="panel-section">
+          <div class="panel-title">── 设 备 升 级 ──</div>
+          <div id="upgrade-shop"></div>
+        </div>
 
-          <div class="phase-panel">
-            <div class="stats-title">── 今日进度 ──</div>
-            <div id="phase-indicators"></div>
-          </div>
+        <div class="panel-section">
+          <div class="panel-title">── 生 活 消 费 ──</div>
+          <div id="life-shop"></div>
+        </div>
+      </aside>
 
-          <div class="stats-sep"></div>
-
-          <button class="menu-btn secondary small" id="btn-save">[ 手动存档 ]</button>
-          <button class="menu-btn secondary small" id="btn-to-title">[ 回标题 ]</button>
-        </aside>
-
-        <!-- 右：事件 -->
-        <main class="event-panel">
-          <div class="event-phase-tag" id="event-phase-tag">── 深夜 ──</div>
-          <div class="event-text" id="event-text"><span class="cursor-blink">█</span></div>
-          <div class="choice-area" id="choice-area"></div>
-          <div class="log-area">
-            <div class="log-title">── 今日记录 ──</div>
-            <div id="event-log"></div>
-          </div>
-        </main>
-      </div>
-    </div>
-
+    </div><!-- screen-game -->
   </div>
 
   <script src="js/save.js"></script>
