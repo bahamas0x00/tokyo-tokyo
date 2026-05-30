@@ -153,17 +153,17 @@ const Game = (() => {
     });
 
     UI.renderUpgradeShop(player, type => {
-      if (type === 'ai') { showAIConfig(); return; }
+      if (type === 'ai-run') { showAIConfig(); return; }
       const result = player.buyTierUpgrade(type);
       if (result) {
         UI.appendLog(`${result.emoji} 升级为【${result.label}】`, 'good');
         UI.toast(`${result.label} ✓`);
-        resetAITimer();
+        if (type === 'ai') resetAITimer();
         UI.updateStats(player);
         renderShops();
         save();
       } else {
-        const lv = (player.tierLevels[type] || 0);
+        const lv    = (player.tierLevels && player.tierLevels[type]) || 0;
         const tiers = { keyboard: KEYBOARD_TIERS, monitor: MONITOR_TIERS, chair: CHAIR_TIERS, ai: AI_TIERS }[type];
         const maxed = tiers && lv >= tiers.length;
         UI.toast(maxed ? '已满级' : '余额不足');

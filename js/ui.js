@@ -188,6 +188,11 @@ const UI = (() => {
         ? (def.type === 'ai' ? `每${next.autoClickInterval/1000}秒自动敲一次` : `+¥${next.bonus}/click`)
         : '';
 
+      // AI 拥有等级后，额外显示「启动运行」按钮
+      const aiRunBtn = (def.type === 'ai' && currentLevel > 0)
+        ? `<button class="shop-btn ai-run-btn" data-type="ai-run">▶ 启动运行</button>`
+        : '';
+
       return `<div class="shop-item ${disabled ? 'locked' : ''}">
         <div class="shop-item-header">
           <span>${next ? next.emoji : (current ? current.emoji : '⬜')} ${def.label}</span>
@@ -196,13 +201,20 @@ const UI = (() => {
         <div class="shop-item-desc">${nextDesc}</div>
         <div class="shop-item-footer">
           ${nextBonus ? `<span class="shop-yield neon-cyan">${nextBonus}</span>` : '<span></span>'}
-          <button class="shop-btn ${disabled ? 'disabled' : ''}" data-type="${def.type}">${btnLabel}</button>
+          <div style="display:flex;gap:6px;flex-wrap:wrap">
+            <button class="shop-btn ${disabled ? 'disabled' : ''}" data-type="${def.type}">${btnLabel}</button>
+            ${aiRunBtn}
+          </div>
         </div>
       </div>`;
     }).join('');
 
     el.querySelectorAll('.shop-btn:not(.disabled)').forEach(btn => {
       btn.addEventListener('click', () => onBuy(btn.dataset.type));
+    });
+    // 「启动运行」按钮单独绑定（不走 disabled 过滤）
+    el.querySelectorAll('.ai-run-btn').forEach(btn => {
+      btn.addEventListener('click', () => onBuy('ai-run'));
     });
   }
 
