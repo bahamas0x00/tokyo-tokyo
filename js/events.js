@@ -34,6 +34,9 @@ const POPUP_EVENTS = [
     ]
   },
   {
+    isStory: true,
+    storyTitle: '打给家里',
+    storyEmoji: '📞',
     text: '久违地和家人通了个电话。\n妈妈问你有没有好好吃饭。\n你说都好，都好。\n挂掉电话，房间很安静。',
     tone: 'neutral',
     choices: [
@@ -42,6 +45,9 @@ const POPUP_EVENTS = [
     ]
   },
   {
+    isStory: true,
+    storyTitle: '电梯里的她',
+    storyEmoji: '🏩',
     text: '电梯门打开的时候，你们同时愣了一下。\n她比照片里更普通，穿着便服，抱着一个包。\n你知道她是谁。她不知道你是谁。\n楼层数字往上走，你们保持着陌生人的距离。',
     tone: 'neutral',
     choices: [
@@ -49,11 +55,14 @@ const POPUP_EVENTS = [
     ]
   },
   {
+    isStory: true,
+    storyTitle: '三十天找房子',
+    storyEmoji: '🏠',
     text: 'HR发来邮件——\n「入住期限为30天，之后请自行安排住所。」\n\n你打开了Suumo。\n页面全是日语。\n你不会日语。',
     tone: 'bad',
     choices: [
       { label: '开始一行一行翻译', reply: '你用翻译软件，一个词一个词地读。\n"礼金"和"敷金"——后来才知道都是要付的。\n倒计时：30天。', changes: { energy: -15, happiness: -10 }, tone: 'bad' },
-      { label: '找HR求助', reply: 'HR介绍了一个中介。\n中介问："外国人？日语大丈夫？"\n你说了个"No"。电话那头沉默了两秒。\n你听懂了那个沉默的意思。', changes: { energy: -8, happiness: -12 }, tone: 'bad' },
+      { label: '找HR求助', reply: 'HR介绍了一个中介。\n中介问："外国人？日語大丈夫？"\n你说了个"No"。电话那头沉默了两秒。\n你听懂了那个沉默的意思。', changes: { energy: -8, happiness: -12 }, tone: 'bad' },
     ]
   },
   {

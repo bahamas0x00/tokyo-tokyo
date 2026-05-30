@@ -10,14 +10,17 @@ const Game = (() => {
   // ── 风俗店故事序列 ────────────────────────────────────────
   const FUJOKU_STORIES = [
     {
+      isStory: true, storyTitle: '电梯里的她（一）', storyEmoji: '🏩',
       text: '电梯门打开的时候，你们同时愣了一下。\n\n她比照片里更普通，穿着便服，抱着一个包，\n像是刚下班的OL。\n\n你知道她是谁。她不知道你是谁。\n楼层数字往上走，你们保持着陌生人的距离。',
       choices: [{ label: '什么都没说，盯着门', reply: '她先出了电梯，你跟在后面，走进了同一扇门。\n她转过身，愣了两秒，然后职业性地笑了。\n"啊，是您。"\n你不知道该说什么，也笑了。', changes: {}, tone: 'neutral' }],
     },
     {
+      isStory: true, storyTitle: '电梯里的她（二）', storyEmoji: '🏩',
       text: '洗完澡，她没有说话，\n只是侧躺过来，把头靠在你旁边。\n\n像一只猫。\n\n你低下头，吻了她。\n是真的吻，不是那种。\n她没有躲。',
       choices: [{ label: '什么都没说', reply: '这是你来东京以来第一次觉得不孤独。\n你知道这不是真的。\n但今晚不想在意这些。', changes: { happiness: 15 }, tone: 'good' }],
     },
     {
+      isStory: true, storyTitle: '她的LINE', storyEmoji: '💬',
       text: '出门前你问她能不能加LINE。\n她把二维码给你扫了。\n\n此后偶尔会有消息。\n"下周四有出勤哦～"  一个笑脸。\n\n她在演戏。你当真了。\n你知道你当真了。\n你没有办法。',
       choices: [
         { label: '回复了一个笑脸', reply: '她秒回了一个"✨"。\n你看着这个符号很久。', changes: { happiness: -5 }, tone: 'neutral' },
@@ -84,6 +87,9 @@ const Game = (() => {
   }
 
   function bindGameButtons() {
+    document.getElementById('btn-stories').addEventListener('click', () => {
+      UI.showStories(player.storyLog || []);
+    });
     document.getElementById('btn-save').addEventListener('click', () => {
       save(); UI.toast('存档完成 ✓');
     });
@@ -178,6 +184,10 @@ const Game = (() => {
     eventActive = true;
     UI.showEventPopup(story, choice => {
       player.modify(choice.changes || {});
+      if (story.isStory) {
+        player.addStory({ title: story.storyTitle, emoji: story.storyEmoji, text: story.text, reply: choice.reply || '', tone: choice.tone });
+        UI.showStoryBadge(player.storyLog.length);
+      }
       UI.appendLog('🏩 ' + (choice.reply || '').split('\n')[0], choice.tone);
       UI.updateStats(player);
       renderShops();
@@ -195,7 +205,10 @@ const Game = (() => {
     const event = getRandomEvent();
     UI.showEventPopup(event, choice => {
       player.modify(choice.changes || {});
-      if (choice.money) player.money += choice.money;
+      if (event.isStory) {
+        player.addStory({ title: event.storyTitle, emoji: event.storyEmoji, text: event.text, reply: choice.reply || '', tone: choice.tone });
+        UI.showStoryBadge(player.storyLog.length);
+      }
       UI.appendLog((choice.reply || event.text).split('\n')[0], choice.tone);
       UI.updateStats(player);
       renderShops();

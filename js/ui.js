@@ -279,10 +279,69 @@ const UI = (() => {
     _toastT = setTimeout(() => _toastEl.classList.remove('show'), ms);
   }
 
+  // ── story badge ────────────────────────────────────────────
+  function showStoryBadge(count) {
+    const el = document.getElementById('story-badge');
+    if (!el) return;
+    el.textContent = count;
+    el.classList.remove('hidden');
+  }
+
+  // ── story archive modal ────────────────────────────────────
+  function showStories(storyLog) {
+    const existing = document.getElementById('story-modal');
+    if (existing) existing.remove();
+
+    const modal = document.createElement('div');
+    modal.id = 'story-modal';
+    modal.className = 'story-overlay';
+
+    const entries = storyLog.length === 0
+      ? '<div class="story-empty dim">还没有记录任何故事。<br/>去游戏里触发它们吧。</div>'
+      : storyLog.map((s, i) => `
+          <div class="story-card" id="story-${i}">
+            <div class="story-card-header">
+              <span class="story-emoji">${s.emoji}</span>
+              <span class="story-title">${s.title}</span>
+              <span class="story-meta dim">Day ${s.day} · ${s.time}</span>
+              <button class="story-toggle" data-idx="${i}">展开</button>
+            </div>
+            <div class="story-body hidden" id="story-body-${i}">
+              <div class="story-text">${s.text.replace(/\n/g, '<br/>')}</div>
+              ${s.reply ? `<div class="story-reply">${s.reply.replace(/\n/g, '<br/>')}</div>` : ''}
+            </div>
+          </div>`).join('');
+
+    modal.innerHTML = `
+      <div class="story-box">
+        <div class="story-box-title neon-cyan">── 物 語 ──</div>
+        <div class="story-list">${entries}</div>
+        <button class="menu-btn secondary small" id="story-close">[ 关闭 ]</button>
+      </div>`;
+
+    document.body.appendChild(modal);
+
+    modal.querySelector('#story-close').addEventListener('click', () => modal.remove());
+    modal.querySelectorAll('.story-toggle').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const idx  = btn.dataset.idx;
+        const body = document.getElementById(`story-body-${idx}`);
+        const open = !body.classList.contains('hidden');
+        body.classList.toggle('hidden', open);
+        btn.textContent = open ? '展开' : '收起';
+      });
+    });
+
+    // hide badge
+    const badge = document.getElementById('story-badge');
+    if (badge) badge.classList.add('hidden');
+  }
+
   return {
     show, updateStats, updateClock,
     renderInvestShop, renderUpgradeShop, renderLifeShop,
     showEventPopup, hideEventPopup,
     spawnFloat, showMarketNews, appendLog, toast,
+    showStoryBadge, showStories,
   };
 })();

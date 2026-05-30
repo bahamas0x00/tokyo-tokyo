@@ -31,6 +31,9 @@ class Player {
       btc:    1.0,
     };
 
+    // ── 故事档案（只存真实经历）──
+    this.storyLog  = [];   // [{ title, emoji, text, reply, day, time, tone }]
+
     // ── 状态 ──
     this.company   = '株式会社ブラック商事';
     this.lastTick  = Date.now();
@@ -163,6 +166,15 @@ class Player {
   addLog(text, tone = 'neutral') {
     this.eventLog.unshift({ time: tokyoTimeStr(), text, tone });
     if (this.eventLog.length > 20) this.eventLog.pop();
+  }
+
+  addStory({ title, emoji, text, reply, tone }) {
+    this.storyLog.unshift({
+      title, emoji, text, reply, tone,
+      day:  this.day,
+      time: tokyoTimeStr(),
+      id:   Date.now(),
+    });
   }
 
   toJSON() { return { ...this, lastSaved: new Date().toISOString() }; }
