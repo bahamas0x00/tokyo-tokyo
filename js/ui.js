@@ -8,6 +8,10 @@ const UI = (() => {
 
   // ── stats ──────────────────────────────────────────────────
   function updateStats(p) {
+    // 後輩产出统计
+    const kohaiEl = document.getElementById('val-kohai-earned');
+    if (kohaiEl) kohaiEl.textContent = fmtMoney(p.kohaiEarned || 0);
+
     setText('hdr-name',       p.name);
     setText('hdr-title',      p.title);
     setText('hdr-day',        p.day);
@@ -178,22 +182,45 @@ const UI = (() => {
     const el = document.getElementById('auto-shop');
     if (!el) return;
 
-    const staffItems = AUTO_STAFF.map(def => {
-      const count     = p.autoStaff?.[def.id] || 0;
-      const price     = p.autoStaffPrice ? p.autoStaffPrice(def.id) : def.cost;
-      const canAfford = p.money >= price;
-      return `<div class="shop-item ${canAfford ? '' : 'locked'}">
+    const count = p.autoStaff?.kohai || 0;
+
+    // 未达到主任：显示锁定状态
+    if (!p.canApplyForKohai) {
+      var staffItems = `<div class="shop-item locked">
+        <div class="shop-item-header"><span>👥 後輩エンジニア</span><span class="shop-count">×${count}</span></div>
+        <div class="shop-item-desc" style="color:var(--pink)">🔒 需要晋升为【主任】后才能向 HR 申请後輩<br/>当前：${p.title}（Day ${p.day}/90）</div>
+      </div>`;
+    } else if (p.hrPending) {
+      // 申请审核中
+      const remaining = Math.max(0, Math.ceil((p.hrPendingEnd - Date.now()) / 1000));
+      var staffItems = `<div class="shop-item">
+        <div class="shop-item-header"><span>📋 HR 审核中…</span><span class="shop-count neon-gold">×${count}</span></div>
+        <div class="shop-item-desc" style="color:var(--gold)">申请书已提交，等待 HR 回复<br/>预计剩余：${remaining} 秒</div>
+        <div class="shop-item-footer"><span class="shop-yield dim">...</span></div>
+      </div>`;
+    } else {
+      // 冷却中或可申请
+      const onCooldown = Date.now() < (p.hrCooldown || 0);
+      const coolSecs   = onCooldown ? Math.ceil(((p.hrCooldown || 0) - Date.now()) / 1000) : 0;
+      const canAfford  = p.money >= 50000;
+      const disabled   = onCooldown || !canAfford;
+      var staffItems = `<div class="shop-item ${disabled ? 'locked' : ''}">
         <div class="shop-item-header">
-          <span>${def.emoji} ${def.label}</span>
+          <span>👥 後輩エンジニア</span>
           <span class="shop-count neon-cyan">×${count}</span>
         </div>
-        <div class="shop-item-desc">${def.desc}</div>
+        <div class="shop-item-desc">${count === 0 ? '招募第一个後輩。作为小组长，压榨他们是你的权利。' : `当前团队 ${count} 人。再申请一个？`}
+        ${onCooldown ? `<br/><span style="color:var(--pink)">HR 冷却中 (${coolSecs}s)</span>` : ''}
+        ${!canAfford && !onCooldown ? `<br/><span style="color:var(--pink)">余额不足 ¥50,000</span>` : ''}
+        </div>
         <div class="shop-item-footer">
-          <span class="shop-yield neon-green">${def.clicksPerSec}/s</span>
-          <button class="shop-btn ${canAfford ? '' : 'disabled'}" data-id="${def.id}">${fmtMoney(price)}</button>
+          <span class="shop-yield neon-green">+0.1 clicks/s 每人</span>
+          <button class="shop-btn ${disabled ? 'disabled' : ''}" data-id="kohai-apply">
+            向HR申請 ¥50k
+          </button>
         </div>
       </div>`;
-    }).join('');
+    }
 
     // AI 自动化摘要
     const aiLevel = p.tierLevels?.ai || 0;

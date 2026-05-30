@@ -147,17 +147,7 @@ const Game = (() => {
     };
 
     UI.renderAutoShop(player, id => {
-      if (player.buyAutoStaff(id)) {
-        const def = AUTO_STAFF.find(a => a.id === id);
-        const count = player.autoStaff[id];
-        UI.appendLog(`${def.emoji} 雇用第 ${count} 个${def.label}`, 'good');
-        UI.toast(`${def.emoji} ${def.label} ×${count} ✓`);
-        UI.updateStats(player);
-        renderShops();
-        save();
-      } else {
-        UI.toast('余额不足');
-      }
+      if (id === 'kohai-apply') { submitHRApplication(); return; }
     });
 
     UI.renderInvestShop(player, key => {
@@ -283,6 +273,63 @@ const Game = (() => {
     }
     UI.showMarketNews(ev.text, ev.tone);
     UI.updateStats(player);
+  }
+
+  // ── HR 申请流程 ───────────────────────────────────────────
+  const HR_COST     = 50000;
+  const HR_WAIT_MS  = 45000;  // 45秒审核
+  const HR_COOLDOWN = 5 * 60000; // 5分钟冷却
+  const HR_APPROVE_RATE = 0.7;  // 70%批准率
+
+  function submitHRApplication() {
+    if (!player.canApplyForKohai) { UI.toast('需要晋升为主任后才能申请'); return; }
+    if (player.hrPending)          { UI.toast('申请还在审核中…'); return; }
+    if (Date.now() < (player.hrCooldown || 0)) { UI.toast('HR 冷却中，稍后再试'); return; }
+    if (!player.canAfford(HR_COST)) { UI.toast('余额不足 ¥50,000'); return; }
+
+    player.money      -= HR_COST;
+    player.hrPending   = true;
+    player.hrPendingEnd = Date.now() + HR_WAIT_MS;
+
+    UI.appendLog('📋 已向 HR 提交後輩申请书，等待审核…', 'neutral');
+    UI.toast('申请书已提交，等待 HR 回复');
+    save();
+
+    setTimeout(() => {
+      player.hrPending = false;
+      player.hrCooldown = Date.now() + HR_COOLDOWN;
+
+      if (Math.random() < HR_APPROVE_RATE) {
+        // 批准
+        player.autoStaff.kohai = (player.autoStaff.kohai || 0) + 1;
+        const count = player.autoStaff.kohai;
+        UI.appendLog(`✅ HR 批准！第 ${count} 位後輩即将入职`, 'good');
+        UI.toast('HR 批准了！後輩入职 ✓');
+        UI.showEventPopup({
+          text: `HR 发来邮件：\n\n「您的人员申请已获批准。\n新员工将于本周一报到。」\n\n你看着坐到对面工位的新人，\n想起自己当年入职第一天的样子。\n\n然后你把最难的需求分配给了他。`,
+          choices: [{ label: '这就是社会', reply: '後輩用迷茫的眼神看着你。你露出了意味深长的微笑。', changes: { happiness: 15 }, tone: 'good' }]
+        }, choice => {
+          player.modify(choice.changes || {});
+          save();
+        });
+      } else {
+        // 拒绝
+        player.money += HR_COST; // 退款
+        UI.appendLog('❌ HR 拒绝：今期は予算がありません', 'bad');
+        UI.toast('HR：今期は予算がありません（已退款）');
+        UI.showEventPopup({
+          text: `HR 发来邮件：\n\n「感谢您的申请。\n经研究，今期人力预算已冻结，\n暂无法批准新增人员需求。\n\n如有需要请在下期重新提交。」\n\n你盯着这封邮件看了很久。\n¥50,000 已原路退回。`,
+          choices: [{ label: '好的（不好的）', reply: '你把申请书模板存好，下次还要用。', changes: { happiness: -8 }, tone: 'bad' }]
+        }, choice => {
+          player.modify(choice.changes || {});
+          save();
+        });
+      }
+
+      UI.updateStats(player);
+      renderShops();
+      save();
+    }, HR_WAIT_MS);
   }
 
   // ── AI 配置弹窗 ───────────────────────────────────────────

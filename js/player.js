@@ -19,7 +19,13 @@ class Player {
 
     // ── 自动化（Cookie Clicker 式，可叠加）──
     this.autoStaff = { kohai: 0 };   // 後輩人数
-    this.autoClickAccum = 0;          // 累积小数点击
+    this.autoClickAccum  = 0;         // 累积小数点击
+    this.kohaiEarned     = 0;         // 後輩累计产出（统计压榨成果）
+
+    // ── HR 申请系统 ──
+    this.hrPending    = false;        // 申请进行中
+    this.hrPendingEnd = 0;            // 申请结果时间戳
+    this.hrCooldown   = 0;            // 下次可申请时间戳
 
     // ── 投资组合 { qty, totalCost } ──
     this.portfolio = {
@@ -48,6 +54,16 @@ class Player {
     this.eventLog  = [];
     this.lastSaved = null;
   }
+
+  get title() {
+    if (this.day <  30) return '新卒社員';
+    if (this.day <  90) return '平社員';
+    if (this.day < 180) return '主任';
+    if (this.day < 365) return '係長';
+    return '課長';
+  }
+
+  get canApplyForKohai() { return this.day >= 90; }
 
   // ── 点击收益（受体力影响）────────────────────────────────────
   get clickValue() {
@@ -115,9 +131,13 @@ class Player {
     let autoClicks = 0;
     while (this.autoClickAccum >= 1) {
       this.autoClickAccum -= 1;
-      const earned = this.clickValue;  // 享受设备加成，但不消耗体力
+      const earned = this.clickValue;
       this.money       += earned;
       this.totalEarned += earned;
+      // 統計後輩貢獻（後輩速率占比）
+      const kohaiRate = (this.autoStaff?.kohai || 0) * 0.1;
+      const totalRate = this.autoClickPerSec || 1;
+      this.kohaiEarned = (this.kohaiEarned || 0) + earned * (kohaiRate / totalRate);
       autoClicks++;
     }
 
