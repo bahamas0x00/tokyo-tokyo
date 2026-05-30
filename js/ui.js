@@ -100,26 +100,47 @@ const UI = (() => {
   function renderUpgradeShop(p, onBuy) {
     const el = document.getElementById('upgrade-shop');
     if (!el) return;
-    el.innerHTML = UPGRADES.map(u => {
-      const count    = p.clickUpgrades[u.id] || 0;
-      const owned    = u.maxCount && count >= u.maxCount;
-      const canAfford = !owned && p.money >= u.cost;
-      const disabled  = owned || !canAfford;
-      const btnLabel  = owned ? '已拥有 ✓' : fmtMoney(u.cost);
+
+    const TIER_DEFS = [
+      { type: 'keyboard', label: '键盘',  tiers: KEYBOARD_TIERS },
+      { type: 'monitor',  label: '显示器', tiers: MONITOR_TIERS },
+      { type: 'chair',    label: '椅子',  tiers: CHAIR_TIERS },
+      { type: 'ai',       label: 'AI助手', tiers: AI_TIERS },
+    ];
+
+    el.innerHTML = TIER_DEFS.map(def => {
+      const currentLevel = (p.tierLevels && p.tierLevels[def.type]) || 0;
+      const current = def.tiers.find(t => t.level === currentLevel);
+      const next    = def.tiers.find(t => t.level === currentLevel + 1);
+      const maxed   = !next;
+      const canAfford = next && p.money >= next.cost;
+      const disabled  = maxed || !canAfford;
+
+      const statusLabel = current
+        ? `<span class="neon-cyan" style="font-size:10px">当前：${current.label}</span>`
+        : `<span class="dim" style="font-size:10px">未配置</span>`;
+
+      const btnLabel = maxed ? '已满级 ✓' : next ? fmtMoney(next.cost) : '─';
+      const nextDesc = next ? next.desc : (current ? current.desc : '');
+      const nextBonus = next
+        ? (def.type === 'ai' ? `每${next.autoClickInterval/1000}秒自动敲一次` : `+¥${next.bonus}/click`)
+        : '';
+
       return `<div class="shop-item ${disabled ? 'locked' : ''}">
         <div class="shop-item-header">
-          <span>${u.emoji} ${u.label}</span>
-          ${owned ? '<span class="neon-green" style="font-size:11px">✓</span>' : ''}
+          <span>${next ? next.emoji : (current ? current.emoji : '⬜')} ${def.label}</span>
+          ${statusLabel}
         </div>
-        <div class="shop-item-desc">${u.desc}</div>
+        <div class="shop-item-desc">${nextDesc}</div>
         <div class="shop-item-footer">
-          <span class="shop-yield neon-cyan">+¥${u.bonus}/click</span>
-          <button class="shop-btn ${disabled ? 'disabled' : ''}" data-id="${u.id}">${btnLabel}</button>
+          ${nextBonus ? `<span class="shop-yield neon-cyan">${nextBonus}</span>` : '<span></span>'}
+          <button class="shop-btn ${disabled ? 'disabled' : ''}" data-type="${def.type}">${btnLabel}</button>
         </div>
       </div>`;
     }).join('');
+
     el.querySelectorAll('.shop-btn:not(.disabled)').forEach(btn => {
-      btn.addEventListener('click', () => onBuy(btn.dataset.id));
+      btn.addEventListener('click', () => onBuy(btn.dataset.type));
     });
   }
 

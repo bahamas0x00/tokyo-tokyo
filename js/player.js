@@ -15,6 +15,9 @@ class Player {
     this.clickUpgrades  = {};     // { upgradeId: count }
 
     // ── 投资组合 ──
+    this.tierLevels = { keyboard: 0, monitor: 0, chair: 0, ai: 0 };
+
+    // ── 投资组合 ──
     this.portfolio = {
       bonds:  0,   // 日本国債
       stocks: 0,   // 株式
@@ -47,11 +50,7 @@ class Player {
   }
 
   get upgradeBonus() {
-    const UP = UPGRADES;
-    return Object.entries(this.clickUpgrades).reduce((sum, [id, count]) => {
-      const u = UP.find(u => u.id === id);
-      return sum + (u ? u.bonus * count : 0);
-    }, 0);
+    return this.getTierBonus ? this.getTierBonus() : 0;
   }
 
   // ── 被动收益 / 秒 ────────────────────────────────────────────
@@ -107,14 +106,32 @@ class Player {
     return true;
   }
 
-  buyUpgrade(id) {
-    const u = UPGRADES.find(u => u.id === id);
-    if (!u || !this.canAfford(u.cost)) return false;
-    const count = this.clickUpgrades[id] || 0;
-    if (u.maxCount && count >= u.maxCount) return false;
-    this.money -= u.cost;
-    this.clickUpgrades[id] = count + 1;
-    return true;
+  // 分级升级：type = 'keyboard'|'monitor'|'chair'|'ai'
+  buyTierUpgrade(type) {
+    const tiers = { keyboard: KEYBOARD_TIERS, monitor: MONITOR_TIERS, chair: CHAIR_TIERS, ai: AI_TIERS }[type];
+    if (!tiers) return false;
+    const current = this.tierLevels[type] || 0;
+    const next = tiers.find(t => t.level === current + 1);
+    if (!next || !this.canAfford(next.cost)) return false;
+    this.money -= next.cost;
+    this.tierLevels[type] = next.level;
+    return next;
+  }
+
+  getTierBonus() {
+    const types = ['keyboard', 'monitor', 'chair'];
+    return types.reduce((sum, type) => {
+      const tiers = { keyboard: KEYBOARD_TIERS, monitor: MONITOR_TIERS, chair: CHAIR_TIERS }[type];
+      const level = this.tierLevels[type] || 0;
+      const tier  = tiers.find(t => t.level === level);
+      return sum + (tier ? tier.bonus : 0);
+    }, 0);
+  }
+
+  getAIInterval() {
+    const level = this.tierLevels.ai || 0;
+    const tier  = AI_TIERS.find(t => t.level === level);
+    return tier ? tier.autoClickInterval : null;
   }
 
   buyShopItem(id) {
@@ -184,11 +201,30 @@ const INVESTMENTS = {
 };
 
 // ── 点击升级定义 ──────────────────────────────────────────────
-const UPGRADES = [
-  { id: 'keyboard', label: '人間工学キーボード', emoji: '⌨️', bonus: 80,   cost: 5000,   maxCount: 1, desc: '手腕不疼了，效率提升。' },
-  { id: 'monitor',  label: '4Kモニター',        emoji: '🖥️', bonus: 200,  cost: 20000,  maxCount: 1, desc: '代码看起来更贵了。' },
-  { id: 'chair',    label: 'エルゴチェア',      emoji: '🪑', bonus: 500,  cost: 80000,  maxCount: 1, desc: '坐着不累，可以敲更久。' },
-  { id: 'ai',       label: 'AIコードアシスト',  emoji: '🤖', bonus: 1500, cost: 300000, maxCount: 1, desc: '其实你只是在检查AI写的代码。' },
+// 分级升级：键盘 / 显示器（每级替换上一级，只保留当前等级）
+const KEYBOARD_TIERS = [
+  { level: 1, label: 'メカニカルキーボード', emoji: '⌨️', bonus: 80,   cost: 5000,   desc: '敲起来有感觉了，效率提升。' },
+  { level: 2, label: '人間工学キーボード',   emoji: '⌨️', bonus: 250,  cost: 20000,  desc: '手腕不疼了，可以敲更久。' },
+  { level: 3, label: '静電容量無接点キーボード', emoji: '⌨️', bonus: 700, cost: 80000, desc: '打字声音很好听，你感觉自己很厉害。' },
+];
+
+const MONITOR_TIERS = [
+  { level: 1, label: '4Kモニター',           emoji: '🖥️', bonus: 200,  cost: 15000,  desc: '代码看起来更贵了。' },
+  { level: 2, label: 'ウルトラワイド曲面',   emoji: '🖥️', bonus: 600,  cost: 60000,  desc: '视野开阔，bug 也更容易发现了。' },
+  { level: 3, label: 'デュアル4K',           emoji: '🖥️', bonus: 1500, cost: 200000, desc: '两块屏幕。你终于感觉像个真正的程序员了。' },
+];
+
+const CHAIR_TIERS = [
+  { level: 1, label: 'ゲーミングチェア',  emoji: '🪑', bonus: 300,  cost: 30000,  desc: '比公司的椅子好多了。腰不疼了。' },
+  { level: 2, label: 'エルゴチェア',      emoji: '🪑', bonus: 800,  cost: 120000, desc: '你开始理解为什么程序员都爱这个。' },
+  { level: 3, label: 'ハーマンミラー',    emoji: '🪑', bonus: 2000, cost: 500000, desc: '¥50万的椅子。坐上去的第一秒你觉得值了。' },
+];
+
+// AI 自动点击（分级，每级加快点击频率）
+const AI_TIERS = [
+  { level: 1, label: '基本AIアシスト',   emoji: '🤖', autoClickInterval: 5000, cost: 200000,   desc: '每5秒自动敲一次代码。你还是需要在的。' },
+  { level: 2, label: '上位AIアシスト',   emoji: '🤖', autoClickInterval: 2000, cost: 800000,   desc: '每2秒。你开始怀疑自己存在的意义。' },
+  { level: 3, label: 'AGIアシスト',      emoji: '🤖', autoClickInterval: 500,  cost: 5000000,  desc: '你只是在看它工作。这就是社畜的终点站吗？' },
 ];
 
 // ── 生活消费定义 ─────────────────────────────────────────────

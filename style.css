@@ -178,5 +178,20 @@ html, body { height: 100%; overflow: hidden; background: var(--bg); color: var(-
 .toast { position: fixed; bottom: 32px; left: 50%; transform: translateX(-50%) translateY(16px); background: var(--bg2); border: 1px solid var(--cyan); color: var(--cyan); font-family: var(--font-m); font-size: 14px; padding: 10px 26px; box-shadow: 0 0 24px #00e8ff40; opacity: 0; transition: all .25s; z-index: 9999; pointer-events: none; }
 .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
 
+/* ── AI config overlay ── */
+.ai-config-overlay { position: fixed; inset: 0; background: #00000088; display: flex; align-items: center; justify-content: center; z-index: 500; }
+.ai-config-box { background: var(--bg2); border: 1px solid var(--cyan); padding: 32px 40px; max-width: 440px; width: 90%; display: flex; flex-direction: column; gap: 16px; box-shadow: 0 0 40px #00e8ff30; }
+.ai-config-title { font-family: var(--font-m); font-size: 16px; letter-spacing: .3em; text-align: center; }
+.ai-config-desc { font-size: 13px; color: var(--dim); }
+.ai-config-stats { display: flex; flex-direction: column; gap: 5px; font-family: var(--font-m); font-size: 13px; background: var(--bg3); padding: 12px; border: 1px solid var(--border); }
+.ai-config-label { font-family: var(--font-m); font-size: 11px; letter-spacing: .2em; }
+.ai-duration-list { display: flex; flex-direction: column; gap: 8px; }
+.ai-dur-btn { background: var(--bg3); border: 1px solid var(--border); padding: 10px 16px; cursor: pointer; display: flex; justify-content: space-between; align-items: center; gap: 12px; transition: all .2s; font-family: var(--font-m); font-size: 13px; color: var(--text); }
+.ai-dur-btn:hover:not(.disabled) { border-color: var(--cyan); background: #00e8ff08; }
+.ai-dur-btn.disabled { opacity: .35; cursor: not-allowed; }
+.dur-label  { font-size: 13px; }
+.dur-cost   { font-size: 11px; }
+.dur-profit { font-size: 12px; }
+
 /* ── animations ── */
 @keyframes flicker { 0%,95%,100%{opacity:1} 96%{opacity:.7} 97%{opacity:1} 98%{opacity:.4} 99%{opacity:1} }
