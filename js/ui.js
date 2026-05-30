@@ -22,6 +22,7 @@ const UI = (() => {
     setText('val-energy',    Math.floor(p.energy));
     setText('val-health',    Math.floor(p.health));
     setText('val-happiness', Math.floor(p.happiness));
+    updateConfig(p);
     updatePortfolio(p);
     updateMarket(p);
   }
@@ -39,6 +40,28 @@ const UI = (() => {
   function setText(id, val) {
     const el = document.getElementById(id);
     if (el) el.textContent = val;
+  }
+
+  function updateConfig(p) {
+    const el = document.getElementById('config-display');
+    if (!el) return;
+    const levels = p.tierLevels || {};
+    const defs = [
+      { type: 'keyboard', tiers: KEYBOARD_TIERS, emptyLabel: '会社のキーボード' },
+      { type: 'monitor',  tiers: MONITOR_TIERS,  emptyLabel: '会社のモニター' },
+      { type: 'chair',    tiers: CHAIR_TIERS,    emptyLabel: '会社の椅子' },
+      { type: 'ai',       tiers: AI_TIERS,       emptyLabel: 'AI未启动' },
+    ];
+    el.innerHTML = defs.map(d => {
+      const lv   = levels[d.type] || 0;
+      const tier = d.tiers.find(t => t.level === lv);
+      const label = tier ? tier.label : d.emptyLabel;
+      const color = tier ? 'neon-cyan' : 'dim';
+      return `<div class="config-row">
+        <span>${tier ? tier.emoji : '·'}</span>
+        <span class="${color}" style="font-size:11px">${label}</span>
+      </div>`;
+    }).join('');
   }
 
   function updatePortfolio(p) {
