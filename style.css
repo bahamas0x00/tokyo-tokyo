@@ -129,6 +129,9 @@ html, body { height: 100%; overflow: hidden; background: var(--bg); color: var(-
 .click-total { font-family: var(--font-m); font-size: 12px; color: var(--dim); }
 
 /* ── floating number ── */
+.float-num.auto { color: var(--green); text-shadow: 0 0 10px var(--green); font-size: 13px; }
+.auto-summary { font-family: var(--font-m); font-size: 11px; padding: 6px 0; border-top: 1px solid var(--border); margin-top: 4px; }
+.auto-ai-status { display: flex; justify-content: space-between; font-family: var(--font-m); font-size: 11px; padding: 4px 0; }
 .float-num {
   position: fixed; pointer-events: none; z-index: 9000;
   font-family: var(--font-m); font-size: 16px; font-weight: bold;

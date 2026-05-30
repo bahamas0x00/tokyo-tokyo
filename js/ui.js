@@ -135,6 +135,48 @@ const UI = (() => {
   }
 
   // ── shops ──────────────────────────────────────────────────
+  function renderAutoShop(p, onBuy) {
+    const el = document.getElementById('auto-shop');
+    if (!el) return;
+
+    const staffItems = AUTO_STAFF.map(def => {
+      const count     = p.autoStaff?.[def.id] || 0;
+      const price     = p.autoStaffPrice ? p.autoStaffPrice(def.id) : def.cost;
+      const canAfford = p.money >= price;
+      return `<div class="shop-item ${canAfford ? '' : 'locked'}">
+        <div class="shop-item-header">
+          <span>${def.emoji} ${def.label}</span>
+          <span class="shop-count neon-cyan">×${count}</span>
+        </div>
+        <div class="shop-item-desc">${def.desc}</div>
+        <div class="shop-item-footer">
+          <span class="shop-yield neon-green">${def.clicksPerSec}/s</span>
+          <button class="shop-btn ${canAfford ? '' : 'disabled'}" data-id="${def.id}">${fmtMoney(price)}</button>
+        </div>
+      </div>`;
+    }).join('');
+
+    // AI 自动化摘要
+    const aiLevel = p.tierLevels?.ai || 0;
+    const aiInfo = aiLevel > 0
+      ? `<div class="auto-ai-status">
+          <span class="dim">🤖 AI Lv${aiLevel} 永久运行中</span>
+          <span class="neon-green">+${(p.autoClickPerSec - (p.autoStaff?.kohai || 0) * 0.1).toFixed(1)}/s</span>
+         </div>`
+      : `<div class="dim small" style="padding:4px 0">购买 AI 助手后自动永久运行</div>`;
+
+    // 合计自动点击率
+    const totalRate = p.autoClickPerSec || 0;
+    const summary = totalRate > 0
+      ? `<div class="auto-summary"><span class="dim">合计自动化：</span><span class="neon-cyan">${totalRate.toFixed(2)} clicks/s ≈ ${fmtMoney(totalRate * (p.clickValue || 100))}/s</span></div>`
+      : '';
+
+    el.innerHTML = staffItems + aiInfo + summary;
+    el.querySelectorAll('.shop-btn:not(.disabled)').forEach(btn => {
+      btn.addEventListener('click', () => onBuy(btn.dataset.id));
+    });
+  }
+
   function renderInvestShop(p, onBuy) {
     const el = document.getElementById('invest-shop');
     if (!el) return;
@@ -294,6 +336,22 @@ const UI = (() => {
     tick();
   }
 
+  // ── auto-click float（绿色，区分手动）────────────────────────
+  function spawnAutoFloat(perClick, count) {
+    if (count === 0) return;
+    const btn = document.getElementById('btn-click');
+    if (!btn) return;
+    const total = perClick * count;
+    const el    = document.createElement('div');
+    el.className = 'float-num auto';
+    el.textContent = `🤖 +¥${Math.floor(total).toLocaleString()}`;
+    const rect = btn.getBoundingClientRect();
+    el.style.left = (rect.left + rect.width / 2 + (Math.random() - 0.5) * 80) + 'px';
+    el.style.top  = (rect.top - 10) + 'px';
+    document.body.appendChild(el);
+    setTimeout(() => el.remove(), 1100);
+  }
+
   // ── floating click number ──────────────────────────────────
   function spawnFloat(amount) {
     const btn = document.getElementById('btn-click');
@@ -413,7 +471,7 @@ const UI = (() => {
 
   return {
     show, updateStats, updateClock,
-    renderInvestShop, renderUpgradeShop, renderLifeShop,
+    renderAutoShop, renderInvestShop, renderUpgradeShop, renderLifeShop,
     showEventPopup, hideEventPopup,
     spawnFloat, showMarketNews, appendLog, toast,
     showStoryBadge, showStories,

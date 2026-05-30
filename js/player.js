@@ -14,8 +14,12 @@ class Player {
     this.baseClickValue = 100;    // ¥/click 基础值
     this.clickUpgrades  = {};     // { upgradeId: count }
 
-    // ── 投资组合 ──
+    // ── 设备等级 ──
     this.tierLevels = { keyboard: 0, monitor: 0, chair: 0, ai: 0 };
+
+    // ── 自动化（Cookie Clicker 式，可叠加）──
+    this.autoStaff = { kohai: 0 };   // 後輩人数
+    this.autoClickAccum = 0;          // 累积小数点击
 
     // ── 投资组合 { qty, totalCost } ──
     this.portfolio = {
@@ -58,6 +62,16 @@ class Player {
     return this.getTierBonus ? this.getTierBonus() : 0;
   }
 
+  // ── 自动点击速率 clicks/sec ──────────────────────────────────
+  get autoClickPerSec() {
+    let rate = (this.autoStaff?.kohai || 0) * 0.1;  // 後輩每人 0.1 clicks/sec
+    const ai = this.tierLevels?.ai || 0;
+    if (ai >= 1) rate += 0.2;   // AI Lv1: +0.2/sec（每5秒1次）
+    if (ai >= 2) rate += 0.3;   // AI Lv2: 累计 0.5/sec（每2秒1次）
+    if (ai >= 3) rate += 1.5;   // AI Lv3: 累计 2/sec
+    return rate;
+  }
+
   // ── 被动收益 / 秒 ────────────────────────────────────────────
   get passivePerSec() {
     return Object.entries(INVESTMENTS).reduce((sum, [key, inv]) => {
@@ -89,20 +103,32 @@ class Player {
     const secs = (now - this.lastTick) / 1000;
     this.lastTick = now;
 
-    const earned = this.passivePerSec * secs;
-    if (earned > 0) {
+    // 投资被动收入
+    const passiveEarned = this.passivePerSec * secs;
+    if (passiveEarned > 0) {
+      this.money       += passiveEarned;
+      this.totalEarned += passiveEarned;
+    }
+
+    // 自动点击累积（後輩 + AI）
+    this.autoClickAccum = (this.autoClickAccum || 0) + this.autoClickPerSec * secs;
+    let autoClicks = 0;
+    while (this.autoClickAccum >= 1) {
+      this.autoClickAccum -= 1;
+      const earned = this.clickValue;  // 享受设备加成，但不消耗体力
       this.money       += earned;
       this.totalEarned += earned;
+      autoClicks++;
     }
 
     // 状态缓慢衰减（每小时）
     const hrs = secs / 3600;
-    this.energy    = clamp(this.energy    - hrs * 3,  0, 100);
-    this.happiness = clamp(this.happiness - hrs * 2,  0, 100);
+    this.energy    = clamp(this.energy    - hrs * 3,   0, 100);
+    this.happiness = clamp(this.happiness - hrs * 2,   0, 100);
     this.health    = clamp(this.health    - hrs * 0.5, 0, 100);
 
-    // 每24小时 day +1
-    this.day = 1 + Math.floor(this.totalEarned / 500000); // 每50万升一天（象征性）
+    this.day = 1 + Math.floor(this.totalEarned / 500000);
+    return { autoClicks }; // 告知 game.js 是否要显示浮动数字
   }
 
   // ── 点击 ─────────────────────────────────────────────────────
@@ -139,6 +165,20 @@ class Player {
     pos.qty       = 0;
     pos.totalCost = 0;
     return { gain, value: currentValue, qty: pos.qty };
+  }
+
+  autoStaffPrice(id) {
+    const def   = AUTO_STAFF.find(a => a.id === id);
+    const count = (this.autoStaff?.[id] || 0);
+    return Math.round(def.cost * Math.pow(def.costScale, count));
+  }
+
+  buyAutoStaff(id) {
+    const price = this.autoStaffPrice(id);
+    if (!this.canAfford(price)) return false;
+    this.money -= price;
+    this.autoStaff[id] = (this.autoStaff?.[id] || 0) + 1;
+    return true;
   }
 
   // 分级升级：type = 'keyboard'|'monitor'|'chair'|'ai'
@@ -276,6 +316,17 @@ const AI_TIERS = [
   { level: 1, label: '基本AIアシスト',   emoji: '🤖', autoClickInterval: 5000, cost: 200000,   desc: '每5秒自动敲一次代码。你还是需要在的。' },
   { level: 2, label: '上位AIアシスト',   emoji: '🤖', autoClickInterval: 2000, cost: 800000,   desc: '每2秒。你开始怀疑自己存在的意义。' },
   { level: 3, label: 'AGIアシスト',      emoji: '🤖', autoClickInterval: 500,  cost: 5000000,  desc: '你只是在看它工作。这就是社畜的终点站吗？' },
+];
+
+// ── 自动化员工（可叠加购买）──────────────────────────────────
+const AUTO_STAFF = [
+  {
+    id: 'kohai', label: '後輩エンジニア', emoji: '👨‍💻',
+    cost: 30000,
+    clicksPerSec: 0.1,   // 每10秒1次
+    desc: '刚毕业的后辈，帮你敲一些代码。速度有限，但总比没有强。',
+    costScale: 1.15,     // 每多买一个，价格×1.15
+  },
 ];
 
 // ── 生活消费定义 ─────────────────────────────────────────────

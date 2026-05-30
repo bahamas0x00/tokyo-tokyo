@@ -102,7 +102,8 @@ const Game = (() => {
   function startLoop() {
     // tick every second
     setInterval(() => {
-      player.tick();
+      const { autoClicks } = player.tick() || {};
+      if (autoClicks > 0) UI.spawnAutoFloat(player.clickValue, autoClicks);
       UI.updateStats(player);
       renderShops();
       checkEvent();
@@ -138,6 +139,20 @@ const Game = (() => {
       renderShops();
       save();
     };
+
+    UI.renderAutoShop(player, id => {
+      if (player.buyAutoStaff(id)) {
+        const def = AUTO_STAFF.find(a => a.id === id);
+        const count = player.autoStaff[id];
+        UI.appendLog(`${def.emoji} 雇用第 ${count} 个${def.label}`, 'good');
+        UI.toast(`${def.emoji} ${def.label} ×${count} ✓`);
+        UI.updateStats(player);
+        renderShops();
+        save();
+      } else {
+        UI.toast('余额不足');
+      }
+    });
 
     UI.renderInvestShop(player, key => {
       if (player.buyInvestment(key)) {
