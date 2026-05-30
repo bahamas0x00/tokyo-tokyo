@@ -110,8 +110,10 @@ class Player {
   buyUpgrade(id) {
     const u = UPGRADES.find(u => u.id === id);
     if (!u || !this.canAfford(u.cost)) return false;
+    const count = this.clickUpgrades[id] || 0;
+    if (u.maxCount && count >= u.maxCount) return false;
     this.money -= u.cost;
-    this.clickUpgrades[id] = (this.clickUpgrades[id] || 0) + 1;
+    this.clickUpgrades[id] = count + 1;
     return true;
   }
 
@@ -183,10 +185,10 @@ const INVESTMENTS = {
 
 // ── 点击升级定义 ──────────────────────────────────────────────
 const UPGRADES = [
-  { id: 'keyboard', label: '人間工学キーボード', emoji: '⌨️', bonus: 80,  cost: 5000,   desc: '手腕不疼了，效率提升。' },
-  { id: 'monitor',  label: '4Kモニター',        emoji: '🖥️', bonus: 200, cost: 20000,  desc: '代码看起来更贵了。' },
-  { id: 'chair',    label: 'エルゴチェア',      emoji: '🪑', bonus: 500, cost: 80000,  desc: '坐着不累，可以敲更久。' },
-  { id: 'ai',       label: 'AIコードアシスト',  emoji: '🤖', bonus: 1500,cost: 300000, desc: '其实你只是在检查AI写的代码。' },
+  { id: 'keyboard', label: '人間工学キーボード', emoji: '⌨️', bonus: 80,   cost: 5000,   maxCount: 1, desc: '手腕不疼了，效率提升。' },
+  { id: 'monitor',  label: '4Kモニター',        emoji: '🖥️', bonus: 200,  cost: 20000,  maxCount: 1, desc: '代码看起来更贵了。' },
+  { id: 'chair',    label: 'エルゴチェア',      emoji: '🪑', bonus: 500,  cost: 80000,  maxCount: 1, desc: '坐着不累，可以敲更久。' },
+  { id: 'ai',       label: 'AIコードアシスト',  emoji: '🤖', bonus: 1500, cost: 300000, maxCount: 1, desc: '其实你只是在检查AI写的代码。' },
 ];
 
 // ── 生活消费定义 ─────────────────────────────────────────────

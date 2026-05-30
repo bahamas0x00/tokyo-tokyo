@@ -101,17 +101,20 @@ const UI = (() => {
     const el = document.getElementById('upgrade-shop');
     if (!el) return;
     el.innerHTML = UPGRADES.map(u => {
-      const count     = p.clickUpgrades[u.id] || 0;
-      const canAfford = p.money >= u.cost;
-      return `<div class="shop-item ${canAfford ? '' : 'locked'}">
+      const count    = p.clickUpgrades[u.id] || 0;
+      const owned    = u.maxCount && count >= u.maxCount;
+      const canAfford = !owned && p.money >= u.cost;
+      const disabled  = owned || !canAfford;
+      const btnLabel  = owned ? '已拥有 ✓' : fmtMoney(u.cost);
+      return `<div class="shop-item ${disabled ? 'locked' : ''}">
         <div class="shop-item-header">
           <span>${u.emoji} ${u.label}</span>
-          <span class="shop-count">×${count}</span>
+          ${owned ? '<span class="neon-green" style="font-size:11px">✓</span>' : ''}
         </div>
         <div class="shop-item-desc">${u.desc}</div>
         <div class="shop-item-footer">
           <span class="shop-yield neon-cyan">+¥${u.bonus}/click</span>
-          <button class="shop-btn ${canAfford ? '' : 'disabled'}" data-id="${u.id}">${fmtMoney(u.cost)}</button>
+          <button class="shop-btn ${disabled ? 'disabled' : ''}" data-id="${u.id}">${btnLabel}</button>
         </div>
       </div>`;
     }).join('');
