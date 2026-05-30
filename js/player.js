@@ -22,26 +22,25 @@ class Player {
     this.autoClickAccum  = 0;         // 累积小数点击
     this.kohaiEarned     = 0;         // 後輩累计产出（统计压榨成果）
 
+    // ── 职级 ──
+    this.careerLevel  = 0;            // 0=新卒 1=平社員 2=主任 3=係長 4=課長
+    this.bribeCooldown = 0;           // 贿赂冷却时间戳
+
     // ── HR 申请系统 ──
-    this.hrPending    = false;        // 申请进行中
-    this.hrPendingEnd = 0;            // 申请结果时间戳
-    this.hrCooldown   = 0;            // 下次可申请时间戳
+    this.hrPending    = false;
+    this.hrPendingEnd = 0;
+    this.hrCooldown   = 0;
 
-    // ── 投资组合 { qty, totalCost } ──
+    // ── 投资组合 ──
     this.portfolio = {
-      bonds:  { qty: 0, totalCost: 0 },
-      stocks: { qty: 0, totalCost: 0 },
-      btc:    { qty: 0, totalCost: 0 },
+      bonds: { qty: 0 },                    // 买入不可卖，只记张数
+      btc:   { qty: 0, totalCost: 0 },      // 可卖出，记成本
     };
 
-    // ── 市场行情 (multiplier, 基础1.0) ──
-    this.market = {
-      bonds:  1.0,
-      stocks: 1.0,
-      btc:    1.0,
-    };
+    // ── BTC 市场行情 (multiplier, 基础1.0) ──
+    this.btcMarket = 1.0;
 
-    this.realizedGains = 0;   // 累计已实现收益
+    this.realizedGains = 0;
 
     // ── 故事档案（只存真实经历）──
     this.storyLog  = [];   // [{ title, emoji, text, reply, day, time, tone }]
@@ -55,15 +54,9 @@ class Player {
     this.lastSaved = null;
   }
 
-  get title() {
-    if (this.day <  30) return '新卒社員';
-    if (this.day <  90) return '平社員';
-    if (this.day < 180) return '主任';
-    if (this.day < 365) return '係長';
-    return '課長';
-  }
-
-  get canApplyForKohai() { return this.day >= 90; }
+  // ── 职级（独立于天数，可贿赂提升）────────────────────────────
+  get title() { return ['新卒社員','平社員','主任','係長','課長'][this.careerLevel] || '新卒社員'; }
+  get canApplyForKohai() { return this.careerLevel >= 2; } // 主任以上
 
   // ── 点击收益（受体力影响）────────────────────────────────────
   get clickValue() {
@@ -90,27 +83,23 @@ class Player {
 
   // ── 被动收益 / 秒 ────────────────────────────────────────────
   get passivePerSec() {
-    return Object.entries(INVESTMENTS).reduce((sum, [key, inv]) => {
-      const qty = this.portfolio[key]?.qty || 0;
-      return sum + qty * inv.basePerSec * (this.market[key] || 1);
-    }, 0);
+    const bondsQty = this.portfolio.bonds?.qty || 0;
+    const btcQty   = this.portfolio.btc?.qty   || 0;
+    return bondsQty * INVESTMENTS.bonds.basePerSec
+         + btcQty   * INVESTMENTS.btc.basePerSec * this.btcMarket;
   }
 
-  // ── 未实现收益（纸面盈亏）────────────────────────────────────
-  get unrealizedGain() {
-    return Object.entries(INVESTMENTS).reduce((sum, [key, inv]) => {
-      const pos = this.portfolio[key];
-      if (!pos || pos.qty === 0) return sum;
-      const currentPrice = inv.price * (this.market[key] || 1);
-      return sum + (currentPrice * pos.qty - pos.totalCost);
-    }, 0);
+  // ── BTC 当前卖出总价 ─────────────────────────────────────────
+  get btcCurrentValue() {
+    const qty = this.portfolio.btc?.qty || 0;
+    return qty * INVESTMENTS.btc.price * this.btcMarket;
   }
 
-  // ── 当前市值 ──────────────────────────────────────────────────
-  positionValue(type) {
-    const pos = this.portfolio[type];
+  // ── BTC 浮盈 ─────────────────────────────────────────────────
+  get btcUnrealizedGain() {
+    const pos = this.portfolio.btc;
     if (!pos || pos.qty === 0) return 0;
-    return INVESTMENTS[type].price * (this.market[type] || 1) * pos.qty;
+    return this.btcCurrentValue - (pos.totalCost || 0);
   }
 
   // ── 每秒 tick（被动收入 + 状态衰减）──────────────────────────
@@ -148,7 +137,16 @@ class Player {
     this.health    = clamp(this.health    - hrs * 0.5, 0, 100);
 
     this.day = 1 + Math.floor(this.totalEarned / 500000);
-    return { autoClicks }; // 告知 game.js 是否要显示浮动数字
+
+    // 自然晋升（慢，需要工作表现 > 70）
+    const naturalThresholds = [30, 90, 180, 365]; // 各职级所需天数
+    const nextLevel = this.careerLevel + 1;
+    if (nextLevel <= 4 && naturalThresholds[this.careerLevel] &&
+        this.day >= naturalThresholds[this.careerLevel] && this.work > 70) {
+      this.careerLevel = nextLevel;
+    }
+
+    return { autoClicks };
   }
 
   // ── 点击 ─────────────────────────────────────────────────────
@@ -170,21 +168,20 @@ class Player {
     this.money -= inv.price;
     const pos = this.portfolio[type];
     pos.qty++;
-    pos.totalCost += inv.price;   // 记录买入成本
+    if (type === 'btc') pos.totalCost = (pos.totalCost || 0) + inv.price;
     return true;
   }
 
-  sellInvestment(type) {
-    const pos = this.portfolio[type];
-    const inv = INVESTMENTS[type];
+  sellBtc() {
+    const pos = this.portfolio.btc;
     if (!pos || pos.qty === 0) return null;
-    const currentValue = this.positionValue(type);
-    const gain         = currentValue - pos.totalCost;
-    this.money        += currentValue;
-    this.realizedGains += gain;
+    const sellValue = this.btcCurrentValue;
+    const gain      = sellValue - (pos.totalCost || 0);
+    this.money        += sellValue;
+    this.realizedGains = (this.realizedGains || 0) + gain;
     pos.qty       = 0;
     pos.totalCost = 0;
-    return { gain, value: currentValue, qty: pos.qty };
+    return { gain, value: sellValue };
   }
 
   autoStaffPrice(id) {
@@ -274,13 +271,21 @@ class Player {
   static fromJSON(d) {
     const p = new Player(d.name);
     Object.assign(p, d);
-    // 旧存档兼容：portfolio 值为数字时迁移为对象格式
-    for (const key of ['bonds', 'stocks', 'btc']) {
-      if (typeof p.portfolio[key] === 'number') {
-        const qty = p.portfolio[key];
-        p.portfolio[key] = { qty, totalCost: qty * (INVESTMENTS[key]?.price || 0) };
-      }
+    // 迁移旧存档
+    const port = p.portfolio;
+    if (typeof port.bonds === 'number') port.bonds = { qty: port.bonds };
+    if (!port.bonds) port.bonds = { qty: 0 };
+    if (typeof port.btc === 'number') port.btc = { qty: port.btc, totalCost: port.btc * INVESTMENTS.btc.price };
+    if (!port.btc) port.btc = { qty: 0, totalCost: 0 };
+    // 迁移旧 stocks 持仓 → 换算成 bonds
+    if (port.stocks?.qty > 0) {
+      port.bonds.qty += Math.floor(port.stocks.qty * 200000 / INVESTMENTS.bonds.price);
     }
+    delete port.stocks;
+    // 迁移旧 market 对象 → btcMarket
+    if (d.market?.btc && !d.btcMarket) p.btcMarket = d.market.btc;
+    if (!p.btcMarket) p.btcMarket = 1.0;
+    delete p.market;
     p.lastTick = Date.now();
     return p;
   }
@@ -291,23 +296,16 @@ const INVESTMENTS = {
   bonds: {
     id: 'bonds', label: '日本国債', emoji: '📜',
     price: 50000,
-    basePerSec: 1.5,   // ¥/sec per unit (≈¥5,400/hr)
-    desc: '稳定，无聊，但不会让你破产。',
-    riskLabel: '低风险',
-  },
-  stocks: {
-    id: 'stocks', label: '株式（日経）', emoji: '📈',
-    price: 200000,
-    basePerSec: 8.0,   // ¥/sec per unit (≈¥28,800/hr)
-    desc: '有涨有跌。市场就是这样。',
-    riskLabel: '中风险',
+    basePerSec: 1.5,
+    desc: '稳定，无聊，但绝不归零。买了就忘。',
+    canSell: false,
   },
   btc: {
     id: 'btc', label: '比特币', emoji: '₿',
     price: 500000,
-    basePerSec: 25.0,  // ¥/sec per unit (≈¥90,000/hr) but very volatile
-    desc: '它可能让你财务自由，也可能让你哭着离开东京。',
-    riskLabel: '高风险',
+    basePerSec: 20.0,
+    desc: '可能让你财务自由，也可能让你哭着离开东京。',
+    canSell: true,
   },
 };
 
@@ -359,17 +357,32 @@ const SHOP_ITEMS = [
   { id: 'fujoku',   label: '风俗店',    emoji: '🏩', cost: 12000, cooldown: 0,          changes: { happiness: 40, health: -3  }, desc: '快乐+40，健康-3',  reply: null, tone: 'neutral' },
 ];
 
-// ── 市场事件 ─────────────────────────────────────────────────
+// ── BTC 市场事件（weight 控制概率）───────────────────────────
 const MARKET_EVENTS = [
-  { text: '📉 日経暴落！株式市場が急落しています。', affects: 'stocks', mult: 0.6, tone: 'bad' },
-  { text: '📈 日経が年初来高値を更新！', affects: 'stocks', mult: 1.5, tone: 'good' },
-  { text: '🏦 日銀が追加利上げを決定。国債利回り上昇。', affects: 'bonds', mult: 1.3, tone: 'good' },
-  { text: '₿ 比特币突破历史高点！加密市场狂欢。', affects: 'btc', mult: 2.2, tone: 'good' },
-  { text: '₿ 各国加密货币监管收紧，比特币暴跌40%。', affects: 'btc', mult: 0.5, tone: 'bad' },
-  { text: '₿ 某交易所疑似跑路，比特币急剧下跌。', affects: 'btc', mult: 0.3, tone: 'bad' },
-  { text: '🌍 全球经济衰退预期升温，市场整体下行。', affects: 'all', mult: 0.75, tone: 'bad' },
-  { text: '🎉 央行放水！流动性充裕，市场普涨。', affects: 'all', mult: 1.3, tone: 'good' },
+  // 小涨（常见）
+  { text: '₿ 机构买入信号！比特币小幅回升。',      text_en: '₿ Institutional buying signal. BTC recovers.',         text_ja: '₿ 機関投資家の買いシグナル。BTC小幅回復。',     mult: 1.25, weight: 4, tone: 'good' },
+  { text: '₿ 比特币突破近期阻力位。',              text_en: '₿ Bitcoin breaks through resistance.',               text_ja: '₿ ビットコインが直近の抵抗線を突破。',           mult: 1.5,  weight: 3, tone: 'good' },
+  // 大涨（少见）
+  { text: '₿ 某国宣布比特币为法定货币！',          text_en: '₿ A nation adopts Bitcoin as legal tender!',         text_ja: '₿ ある国がビットコインを法定通貨に採用！',       mult: 2.0,  weight: 1, tone: 'good' },
+  { text: '₿ 比特币突破历史高点！加密市场狂欢。',  text_en: '₿ Bitcoin breaks all-time high! Crypto euphoria.',   text_ja: '₿ ビットコinが過去最高値を更新！暗号市場が沸く。', mult: 2.5, weight: 1, tone: 'good' },
+  // 小跌（常见）
+  { text: '₿ 获利了结，比特币小幅回调。',          text_en: '₿ Profit-taking. BTC dips slightly.',               text_ja: '₿ 利益確定売り。BTC小幅下落。',                 mult: 0.8,  weight: 4, tone: 'bad' },
+  { text: '₿ 监管消息面偏空，市场情绪谨慎。',      text_en: '₿ Regulatory headwinds. Market cautious.',          text_ja: '₿ 規制ニュース重し。市場は慎重姿勢。',           mult: 0.65, weight: 3, tone: 'bad' },
+  // 大跌（少见）
+  { text: '₿ 各国监管收紧，比特币暴跌40%！',      text_en: '₿ Global crackdown! Bitcoin -40%.',                 text_ja: '₿ 各国規制強化。ビットコイン40%暴落！',         mult: 0.45, weight: 2, tone: 'bad' },
+  { text: '₿ 某交易所疑似跑路，市场恐慌性抛售！', text_en: '₿ Exchange suspected exit scam. Panic selling!',    text_ja: '₿ 取引所が突然閉鎖疑惑。パニック売り！',        mult: 0.28, weight: 2, tone: 'bad' },
+  // 崩盘（罕见）
+  { text: '₿ 比特币遭遇闪崩！价格暴跌80%。',      text_en: '₿ Bitcoin flash crash! Price down 80%.',           text_ja: '₿ ビットコインがフラッシュクラッシュ！-80%。', mult: 0.15, weight: 1, tone: 'bad', isCrash: true },
+  // 归零（极罕见）
+  { text: '₿ 比特币归零。一切在一夜之间消失。',    text_en: '₿ Bitcoin collapses to zero. Everything gone overnight.', text_ja: '₿ ビットコインが限りなくゼロへ。一夜にしてすべてが消えた。', mult: 0.03, weight: 0.3, tone: 'bad', isCrash: true },
 ];
+
+function pickMarketEvent() {
+  const total = MARKET_EVENTS.reduce((s, e) => s + e.weight, 0);
+  let r = Math.random() * total;
+  for (const e of MARKET_EVENTS) { r -= e.weight; if (r <= 0) return e; }
+  return MARKET_EVENTS[MARKET_EVENTS.length - 1];
+}
 
 // ── helpers ───────────────────────────────────────────────────
 function clamp(v, lo = 0, hi = 100) { return Math.max(lo, Math.min(hi, v)); }

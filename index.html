@@ -1,11 +1,11 @@
 <!DOCTYPE html>
-<html lang="zh-CN">
+<html lang="zh-CN" id="html-root">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>東京社畜</title>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
-  <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Noto+Sans+JP:wght@400;700&display=swap" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=DotGothic16&family=Noto+Sans+JP:wght@400;700&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="style.css" />
 </head>
 <body>
@@ -17,16 +17,17 @@
       <div class="title-art">
         <div class="title-jp neon-pink">東京社畜</div>
         <div class="title-sub neon-cyan">TOKYO SHACHO</div>
-        <div class="title-desc">在这座永不停歇的城市里，你只是一颗螺丝钉。</div>
+        <div class="title-desc" data-i18n="title.desc">在这座永不停歇的城市里，你只是一颗螺丝钉。</div>
       </div>
       <div class="title-menu">
-        <button class="menu-btn" id="btn-new">[ 新游戏 ]</button>
-        <button class="menu-btn" id="btn-continue" disabled>[ 继续 ]</button>
-        <button class="menu-btn secondary" id="btn-export">[ 导出存档 ]</button>
-        <button class="menu-btn secondary" id="btn-import">[ 导入存档 ]</button>
+        <button class="menu-btn" id="btn-new" data-i18n="title.new">[ 新游戏 ]</button>
+        <button class="menu-btn" id="btn-continue" disabled data-i18n="title.continue">[ 继续 ]</button>
+        <button class="menu-btn secondary" id="btn-export" data-i18n="title.export">[ 导出存档 ]</button>
+        <button class="menu-btn secondary" id="btn-import" data-i18n="title.import">[ 导入存档 ]</button>
+        <button class="menu-btn secondary" id="btn-lang" style="font-size:10px;padding:6px 12px" data-i18n="lang.toggle">EN</button>
       </div>
       <div class="title-time">
-        <span class="neon-cyan">🗼 东京时间</span>
+        <span class="neon-cyan" data-i18n="title.time">🗼 东京时间</span>
         <span id="title-clock" class="mono neon-pink">──:──:──</span>
       </div>
     </div>
@@ -34,16 +35,16 @@
     <!-- ── 创建角色 ── -->
     <div id="screen-create" class="screen">
       <div class="create-box">
-        <div class="create-title neon-cyan">── 新的社畜诞生 ──</div>
+        <div class="create-title neon-cyan" data-i18n="create.title">── 新的社畜诞生 ──</div>
         <div class="create-scene">
-          <p>入职第一天。</p>
-          <p>你跟着公司从F国搬来了这座城市。<br/>你不会日语，但合同已经签了。</p>
-          <p>先从敲代码开始吧。</p>
-          <p style="color:#4a4a6a;font-size:12px;margin-top:12px;">（我只是个会点鼠标的猴子）</p>
+          <p data-i18n="create.p1">入职第一天。</p>
+          <p data-i18n="create.p2">你跟着公司从F国搬来了这座城市。<br/>你不会日语，但合同已经签了。</p>
+          <p data-i18n="create.p3">先从敲代码开始吧。</p>
+          <p style="color:#4a4a6a;font-size:12px;margin-top:12px;" data-i18n="create.p4">（我只是个会点鼠标的猴子）</p>
         </div>
         <div class="name-input-row">
-          <input type="text" id="player-name-input" class="name-input" placeholder="你的名字" maxlength="12" />
-          <button class="menu-btn" id="btn-start-game">入 职 →</button>
+          <input type="text" id="player-name-input" class="name-input" data-i18n-placeholder="create.placeholder" placeholder="你的名字" maxlength="12" />
+          <button class="menu-btn" id="btn-start-game" data-i18n="create.start">入 职 →</button>
         </div>
         <div id="create-error" class="error-msg hidden"></div>
       </div>
@@ -54,46 +55,48 @@
 
       <!-- 左栏：状态 + 投资 -->
       <aside class="left-panel">
-        <div class="panel-section">
-          <div class="panel-title">── 状 态 ──</div>
-          <div class="stat-row"><span class="stat-label">体力</span><div class="stat-bar-wrap"><div class="stat-bar" id="bar-energy" data-color="cyan"></div></div><span class="stat-val" id="val-energy">─</span></div>
-          <div class="stat-row"><span class="stat-label">健康</span><div class="stat-bar-wrap"><div class="stat-bar" id="bar-health" data-color="green"></div></div><span class="stat-val" id="val-health">─</span></div>
-          <div class="stat-row"><span class="stat-label">快乐</span><div class="stat-bar-wrap"><div class="stat-bar" id="bar-happiness" data-color="pink"></div></div><span class="stat-val" id="val-happiness">─</span></div>
+        <!-- stats panel hidden until mechanics are fleshed out -->
+        <div class="panel-section" style="display:none">
+          <div class="panel-title" data-i18n="panel.status">── 状 态 ──</div>
+          <div class="stat-row"><span class="stat-label" data-i18n="stat.energy">体力</span><div class="stat-bar-wrap"><div class="stat-bar" id="bar-energy" data-color="cyan"></div></div><span class="stat-val" id="val-energy">─</span></div>
+          <div class="stat-row"><span class="stat-label" data-i18n="stat.health">健康</span><div class="stat-bar-wrap"><div class="stat-bar" id="bar-health" data-color="green"></div></div><span class="stat-val" id="val-health">─</span></div>
+          <div class="stat-row"><span class="stat-label" data-i18n="stat.happiness">快乐</span><div class="stat-bar-wrap"><div class="stat-bar" id="bar-happiness" data-color="pink"></div></div><span class="stat-val" id="val-happiness">─</span></div>
         </div>
 
         <div class="panel-section">
-          <div class="panel-title">── 财 务 ──</div>
+          <div class="panel-title" data-i18n="panel.finance">── 财 务 ──</div>
           <div class="money-display" id="val-money">¥ 0</div>
           <div class="money-sub">
-            <span class="dim">点击: </span><span id="val-click" class="neon-cyan">¥100</span>
-            <span class="dim"> &nbsp;/sec: </span><span id="val-passive" class="neon-green">¥0</span>
+            <span class="dim" data-i18n="finance.click">点击: </span><span id="val-click" class="neon-cyan">¥100</span>
+            <span class="dim" data-i18n="finance.sec"> &nbsp;/sec: </span><span id="val-passive" class="neon-green">¥0</span>
           </div>
           <div class="money-sub" style="margin-top:6px;border-top:1px solid var(--dim);padding-top:6px">
-            <span class="dim">後輩压榨累计: </span><span id="val-kohai-earned" class="neon-cyan">¥0</span>
+            <span class="dim" data-i18n="finance.kohai">後輩压榨累计: </span><span id="val-kohai-earned" class="neon-cyan">¥0</span>
           </div>
         </div>
 
         <div class="panel-section">
-          <div class="panel-title">── 当前配置 ──</div>
+          <div class="panel-title" data-i18n="panel.config">── 当前配置 ──</div>
           <div id="config-display"></div>
         </div>
 
         <div class="panel-section">
-          <div class="panel-title">── 投资组合 ──</div>
+          <div class="panel-title" data-i18n="panel.portfolio">── 投资组合 ──</div>
           <div id="portfolio-display"></div>
         </div>
 
         <div class="panel-section">
-          <div class="panel-title">── 市场行情 ──</div>
+          <div class="panel-title" data-i18n="panel.market">── 市场行情 ──</div>
           <div id="market-display"></div>
         </div>
 
         <div class="panel-bottom">
           <button class="menu-btn secondary small" id="btn-stories">
-            📖 物語 <span id="story-badge" class="story-badge hidden">0</span>
+            <span data-i18n="btn.stories">📖 物語</span> <span id="story-badge" class="story-badge hidden">0</span>
           </button>
-          <button class="menu-btn secondary small" id="btn-save">[ 存档 ]</button>
-          <button class="menu-btn secondary small" id="btn-to-title">[ 主页 ]</button>
+          <button class="menu-btn secondary small" id="btn-save" data-i18n="btn.save">[ 存档 ]</button>
+          <button class="menu-btn secondary small" id="btn-to-title" data-i18n="btn.title">[ 主页 ]</button>
+          <button class="menu-btn secondary small" id="btn-lang-game" style="font-size:9px;padding:4px 8px" data-i18n="lang.toggle">EN</button>
         </div>
       </aside>
 
@@ -149,9 +152,9 @@
 
         <!-- 团队面板（后辈展示） -->
         <div class="team-panel" id="team-panel">
-          <div class="team-panel-title">チーム（被压榨成员）</div>
+          <div class="team-panel-title" data-i18n="team.title">チーム（被压榨成员）</div>
           <div class="team-members" id="team-members-display">
-            <span style="font-size:11px;color:var(--dim)">目前只有你一个人……</span>
+            <span style="font-size:11px;color:var(--dim)" data-i18n="team.empty">目前只有你一个人……</span>
           </div>
         </div>
 
@@ -161,7 +164,7 @@
 
         <!-- 事件弹窗 -->
         <div id="event-popup" class="event-popup hidden">
-          <div class="event-popup-tag" id="popup-tag">── 突发事件 ──</div>
+          <div class="event-popup-tag" id="popup-tag" data-i18n="popup.tag">── 突发事件 ──</div>
           <div class="event-popup-text" id="popup-text"></div>
           <div class="event-popup-choices" id="popup-choices"></div>
         </div>
@@ -171,7 +174,7 @@
 
         <!-- 日志 -->
         <div class="log-area">
-          <div class="log-title">── 今日记录 ──</div>
+          <div class="log-title" data-i18n="log.title">── 今日记录 ──</div>
           <div id="event-log"></div>
         </div>
       </main>
@@ -179,22 +182,22 @@
       <!-- 右栏：商店 -->
       <aside class="right-panel">
         <div class="panel-section">
-          <div class="panel-title">── 自 动 化 ──</div>
+          <div class="panel-title" data-i18n="panel.auto">── 自 动 化 ──</div>
           <div id="auto-shop"></div>
         </div>
 
         <div class="panel-section">
-          <div class="panel-title">── 设 备 升 级 ──</div>
+          <div class="panel-title" data-i18n="panel.upgrade">── 设 备 升 级 ──</div>
           <div id="upgrade-shop"></div>
         </div>
 
         <div class="panel-section">
-          <div class="panel-title">── 投 资 ──</div>
+          <div class="panel-title" data-i18n="panel.invest">── 投 资 ──</div>
           <div id="invest-shop"></div>
         </div>
 
         <div class="panel-section">
-          <div class="panel-title">── 生 活 消 费 ──</div>
+          <div class="panel-title" data-i18n="panel.life">── 生 活 消 费 ──</div>
           <div id="life-shop"></div>
         </div>
       </aside>
@@ -202,6 +205,7 @@
     </div><!-- screen-game -->
   </div>
 
+  <script src="js/i18n.js"></script>
   <script src="js/save.js"></script>
   <script src="js/player.js"></script>
   <script src="js/events.js"></script>

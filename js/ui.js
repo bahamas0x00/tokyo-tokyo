@@ -29,7 +29,6 @@ const UI = (() => {
     setText('val-happiness', Math.floor(p.happiness));
     updateConfig(p);
     updatePortfolio(p, window._onSellCallback);
-    updateMarket(p);
     updateTeamPanel(p);
   }
 
@@ -53,7 +52,7 @@ const UI = (() => {
     if (!el) return;
     const count = p.autoStaff?.kohai || 0;
     if (count === 0) {
-      el.innerHTML = `<span style="font-size:11px;color:var(--dim)">目前只有你一个人……</span>`;
+      el.innerHTML = `<span style="font-size:11px;color:var(--dim)">${t('team.empty')}</span>`;
       return;
     }
     const names = ['田中','铃木','佐藤','高桥','渡边','中村','小林','加藤','吉田','山田'];
@@ -90,15 +89,15 @@ const UI = (() => {
     if (!el) return;
     const levels = p.tierLevels || {};
     const defs = [
-      { type: 'keyboard', tiers: KEYBOARD_TIERS, emptyLabel: '会社のキーボード' },
-      { type: 'monitor',  tiers: MONITOR_TIERS,  emptyLabel: '会社のモニター' },
-      { type: 'chair',    tiers: CHAIR_TIERS,    emptyLabel: '会社の椅子' },
-      { type: 'ai',       tiers: AI_TIERS,       emptyLabel: 'AI未启动' },
+      { type: 'keyboard', tiers: KEYBOARD_TIERS, emptyLabel: '会社のキーボード', emptyKey: 'config.empty' },
+      { type: 'monitor',  tiers: MONITOR_TIERS,  emptyLabel: '会社のモニター',   emptyKey: 'config.empty' },
+      { type: 'chair',    tiers: CHAIR_TIERS,    emptyLabel: '会社の椅子',       emptyKey: 'config.empty' },
+      { type: 'ai',       tiers: AI_TIERS,       emptyLabel: 'AI未启动',         emptyKey: 'config.ai.empty' },
     ];
     el.innerHTML = defs.map(d => {
       const lv   = levels[d.type] || 0;
-      const tier = d.tiers.find(t => t.level === lv);
-      const label = tier ? tier.label : d.emptyLabel;
+      const tier = d.tiers.find(tr => tr.level === lv);
+      const label = tier ? tier.label : t(d.emptyKey);
       const color = tier ? 'neon-cyan' : 'dim';
       return `<div class="config-row">
         <span>${tier ? tier.emoji : '·'}</span>
@@ -111,70 +110,68 @@ const UI = (() => {
     const el = document.getElementById('portfolio-display');
     if (!el) return;
 
-    const unrealized = p.unrealizedGain || 0;
-    const realized   = p.realizedGains  || 0;
+    const bondsQty = p.portfolio.bonds?.qty || 0;
+    const btcQty   = p.portfolio.btc?.qty   || 0;
+    const hasBonds = bondsQty > 0;
+    const hasBtc   = btcQty   > 0;
 
-    const hasAny = Object.values(p.portfolio).some(pos => (pos?.qty || 0) > 0);
+    if (!hasBonds && !hasBtc) {
+      el.innerHTML = `<div class="dim small">${t('portfolio.empty')}</div>`;
+      return;
+    }
 
-    const rows = Object.entries(INVESTMENTS).map(([key, inv]) => {
-      const pos = p.portfolio[key];
-      const qty = pos?.qty || 0;
-      if (qty === 0) return '';
-      const currentPrice = inv.price * (p.market[key] || 1);
-      const totalValue   = currentPrice * qty;
-      const cost         = pos.totalCost || 0;
-      const gain         = totalValue - cost;
-      const gainCls      = gain >= 0 ? 'neon-green' : 'neon-pink';
-      const gainSign     = gain >= 0 ? '+' : '';
-      const perSec       = qty * inv.basePerSec * (p.market[key] || 1);
+    let html = '';
 
-      return `<div class="portfolio-card">
+    // 国債行（简单展示）
+    if (hasBonds) {
+      const perSec = bondsQty * INVESTMENTS.bonds.basePerSec;
+      html += `<div class="portfolio-card">
         <div class="portfolio-row">
-          <span>${inv.emoji} ${inv.label} ×${qty}</span>
-          <button class="sell-btn" data-key="${key}">卖出</button>
+          <span>📜 ${INVESTMENTS.bonds.label} ×${bondsQty}</span>
+          <span class="neon-green" style="font-size:11px">${fmtMoney(perSec)}/s</span>
+        </div>
+      </div>`;
+    }
+
+    // BTC 行（含行情 + 卖出）
+    if (hasBtc) {
+      const m        = p.btcMarket || 1;
+      const pct      = ((m - 1) * 100).toFixed(0);
+      const sign     = m >= 1 ? '+' : '';
+      const trendCls = m >= 1 ? 'neon-green' : 'neon-pink';
+      const trendIcon= m >= 1.05 ? '📈' : m <= 0.95 ? '📉' : '─';
+      const sellVal  = p.btcCurrentValue;
+      const gain     = p.btcUnrealizedGain;
+      const gainCls  = gain >= 0 ? 'neon-green' : 'neon-pink';
+      const gainSign = gain >= 0 ? '+' : '';
+      const perSec   = btcQty * INVESTMENTS.btc.basePerSec * m;
+      const isCrash  = m <= 0.1;
+
+      html += `<div class="portfolio-card ${isCrash ? 'btc-crash' : ''}">
+        <div class="portfolio-row">
+          <span>₿ ${INVESTMENTS.btc.label} ×${btcQty}</span>
+          <button class="sell-btn" id="btc-sell-btn">${t('sell.btn')}</button>
         </div>
         <div class="portfolio-detail">
-          <span class="dim">市值</span><span>${fmtMoney(totalValue)}</span>
-          <span class="dim">成本</span><span>${fmtMoney(cost)}</span>
-          <span class="dim">浮盈</span><span class="${gainCls}">${gainSign}${fmtMoney(gain)}</span>
-          <span class="dim">/s</span><span class="neon-green">${fmtMoney(perSec)}</span>
+          <span class="dim">行情</span>
+          <span class="${trendCls}">${trendIcon} ${sign}${pct}%</span>
+          <span class="dim">浮盈</span>
+          <span class="${gainCls}">${gainSign}${fmtMoney(gain)}</span>
+          <span class="dim">卖出价</span>
+          <span>${fmtMoney(sellVal)}</span>
+          <span class="dim">/s</span>
+          <span class="neon-green">${fmtMoney(perSec)}</span>
         </div>
+        ${isCrash ? `<div style="color:var(--pink);font-size:10px;padding:4px 0">⚠️ 比特币几乎归零。现在卖还能回点血。</div>` : ''}
       </div>`;
-    }).join('');
+    }
 
-    const summary = `<div class="portfolio-summary">
-      <div class="portfolio-row">
-        <span class="dim">未实现</span>
-        <span class="${unrealized >= 0 ? 'neon-green' : 'neon-pink'}">${unrealized >= 0 ? '+' : ''}${fmtMoney(unrealized)}</span>
-      </div>
-      <div class="portfolio-row">
-        <span class="dim">已实现</span>
-        <span class="${realized >= 0 ? 'neon-green' : 'neon-pink'}">${realized >= 0 ? '+' : ''}${fmtMoney(realized)}</span>
-      </div>
-    </div>`;
-
-    el.innerHTML = (hasAny ? rows + summary : '<div class="dim small">尚无投资</div>');
+    el.innerHTML = html;
 
     if (onSell) {
-      el.querySelectorAll('.sell-btn').forEach(btn => {
-        btn.addEventListener('click', () => onSell(btn.dataset.key));
-      });
+      const btn = el.querySelector('#btc-sell-btn');
+      if (btn) btn.addEventListener('click', onSell);
     }
-  }
-
-  function updateMarket(p) {
-    const el = document.getElementById('market-display');
-    if (!el) return;
-    el.innerHTML = Object.entries(INVESTMENTS).map(([key, inv]) => {
-      const m   = p.market[key];
-      const pct = ((m - 1) * 100).toFixed(0);
-      const cls = m >= 1 ? 'neon-green' : 'neon-pink';
-      const sign = m >= 1 ? '+' : '';
-      return `<div class="market-row">
-        <span>${inv.emoji} ${inv.label}</span>
-        <span class="${cls}">${sign}${pct}%</span>
-      </div>`;
-    }).join('');
   }
 
   // ── shops ──────────────────────────────────────────────────
@@ -184,22 +181,19 @@ const UI = (() => {
 
     const count = p.autoStaff?.kohai || 0;
 
-    // 未达到主任：显示锁定状态
     if (!p.canApplyForKohai) {
       var staffItems = `<div class="shop-item locked">
         <div class="shop-item-header"><span>👥 後輩エンジニア</span><span class="shop-count">×${count}</span></div>
-        <div class="shop-item-desc" style="color:var(--pink)">🔒 需要晋升为【主任】后才能向 HR 申请後輩<br/>当前：${p.title}（Day ${p.day}/90）</div>
+        <div class="shop-item-desc" style="color:var(--pink)">${t('kohai.locked')}<br/>${t('kohai.locked.cur', { title: p.title, day: p.day })}</div>
       </div>`;
     } else if (p.hrPending) {
-      // 申请审核中
       const remaining = Math.max(0, Math.ceil((p.hrPendingEnd - Date.now()) / 1000));
       var staffItems = `<div class="shop-item">
-        <div class="shop-item-header"><span>📋 HR 审核中…</span><span class="shop-count neon-gold">×${count}</span></div>
-        <div class="shop-item-desc" style="color:var(--gold)">申请书已提交，等待 HR 回复<br/>预计剩余：${remaining} 秒</div>
+        <div class="shop-item-header"><span>${t('kohai.hr.pending')}</span><span class="shop-count neon-gold">×${count}</span></div>
+        <div class="shop-item-desc" style="color:var(--gold)">${t('kohai.hr.eta')}<br/>${t('kohai.hr.remaining', { n: remaining })}</div>
         <div class="shop-item-footer"><span class="shop-yield dim">...</span></div>
       </div>`;
     } else {
-      // 冷却中或可申请
       const onCooldown = Date.now() < (p.hrCooldown || 0);
       const coolSecs   = onCooldown ? Math.ceil(((p.hrCooldown || 0) - Date.now()) / 1000) : 0;
       const canAfford  = p.money >= 50000;
@@ -209,32 +203,30 @@ const UI = (() => {
           <span>👥 後輩エンジニア</span>
           <span class="shop-count neon-cyan">×${count}</span>
         </div>
-        <div class="shop-item-desc">${count === 0 ? '招募第一个後輩。作为小组长，压榨他们是你的权利。' : `当前团队 ${count} 人。再申请一个？`}
-        ${onCooldown ? `<br/><span style="color:var(--pink)">HR 冷却中 (${coolSecs}s)</span>` : ''}
-        ${!canAfford && !onCooldown ? `<br/><span style="color:var(--pink)">余额不足 ¥50,000</span>` : ''}
+        <div class="shop-item-desc">${count === 0 ? t('kohai.recruit.first') : t('kohai.recruit.more', { n: count })}
+        ${onCooldown ? `<br/><span style="color:var(--pink)">${t('kohai.hr.cooldown', { n: coolSecs })}</span>` : ''}
+        ${!canAfford && !onCooldown ? `<br/><span style="color:var(--pink)">${t('kohai.hr.nofund')}</span>` : ''}
         </div>
         <div class="shop-item-footer">
-          <span class="shop-yield neon-green">+0.1 clicks/s 每人</span>
+          <span class="shop-yield neon-green">+0.1 clicks/s</span>
           <button class="shop-btn ${disabled ? 'disabled' : ''}" data-id="kohai-apply">
-            向HR申請 ¥50k
+            ${t('kohai.hr.btn')}
           </button>
         </div>
       </div>`;
     }
 
-    // AI 自动化摘要
     const aiLevel = p.tierLevels?.ai || 0;
     const aiInfo = aiLevel > 0
       ? `<div class="auto-ai-status">
-          <span class="dim">🤖 AI Lv${aiLevel} 永久运行中</span>
+          <span class="dim">${t('ai.running', { n: aiLevel })}</span>
           <span class="neon-green">+${(p.autoClickPerSec - (p.autoStaff?.kohai || 0) * 0.1).toFixed(1)}/s</span>
          </div>`
-      : `<div class="dim small" style="padding:4px 0">购买 AI 助手后自动永久运行</div>`;
+      : `<div class="dim small" style="padding:4px 0">${t('auto.ai.off')}</div>`;
 
-    // 合计自动点击率
     const totalRate = p.autoClickPerSec || 0;
     const summary = totalRate > 0
-      ? `<div class="auto-summary"><span class="dim">合计自动化：</span><span class="neon-cyan">${totalRate.toFixed(2)} clicks/s ≈ ${fmtMoney(totalRate * (p.clickValue || 100))}/s</span></div>`
+      ? `<div class="auto-summary"><span class="dim">${t('auto.total')}</span><span class="neon-cyan">${totalRate.toFixed(2)} clicks/s ≈ ${fmtMoney(totalRate * (p.clickValue || 100))}/s</span></div>`
       : '';
 
     el.innerHTML = staffItems + aiInfo + summary;
@@ -246,22 +238,47 @@ const UI = (() => {
   function renderInvestShop(p, onBuy) {
     const el = document.getElementById('invest-shop');
     if (!el) return;
-    el.innerHTML = Object.entries(INVESTMENTS).map(([key, inv]) => {
-      const canAfford = p.money >= inv.price;
-      const count = p.portfolio[key] || 0;
-      return `<div class="shop-item ${canAfford ? '' : 'locked'}">
-        <div class="shop-item-header">
-          <span>${inv.emoji} ${inv.label}</span>
-          <span class="shop-count">×${count}</span>
-        </div>
-        <div class="shop-item-desc">${inv.desc}</div>
-        <div class="shop-item-footer">
-          <span class="shop-yield neon-green">${fmtMoney(inv.basePerSec)}/s</span>
-          <span class="shop-risk dim">${inv.riskLabel}</span>
-          <button class="shop-btn ${canAfford ? '' : 'disabled'}" data-key="${key}">${fmtMoney(inv.price)}</button>
-        </div>
-      </div>`;
-    }).join('');
+
+    // 国債：固定价格，稳定收益，不可卖
+    const bondsInv    = INVESTMENTS.bonds;
+    const bondsQty    = p.portfolio.bonds?.qty || 0;
+    const bondsAfford = p.money >= bondsInv.price;
+    const bondsItem   = `<div class="shop-item ${bondsAfford ? '' : 'locked'}">
+      <div class="shop-item-header">
+        <span>📜 ${bondsInv.label}</span>
+        <span class="shop-count">×${bondsQty}</span>
+      </div>
+      <div class="shop-item-desc">${bondsInv.desc}</div>
+      <div class="shop-item-footer">
+        <span class="shop-yield neon-green">${fmtMoney(bondsInv.basePerSec)}/s 固定</span>
+        <button class="shop-btn ${bondsAfford ? '' : 'disabled'}" data-key="bonds">${fmtMoney(bondsInv.price)}</button>
+      </div>
+    </div>`;
+
+    // BTC：当前行情价，高收益高风险，可卖
+    const btcInv    = INVESTMENTS.btc;
+    const btcQty    = p.portfolio.btc?.qty || 0;
+    const m         = p.btcMarket || 1;
+    const pct       = ((m - 1) * 100).toFixed(0);
+    const sign      = m >= 1 ? '+' : '';
+    const mCls      = m >= 1 ? 'neon-green' : 'neon-pink';
+    const btcAfford = p.money >= btcInv.price;
+    const btcPerSec = btcInv.basePerSec * m;
+    const btcItem   = `<div class="shop-item ${btcAfford ? '' : 'locked'}">
+      <div class="shop-item-header">
+        <span>₿ ${btcInv.label}</span>
+        <span class="shop-count">×${btcQty}</span>
+      </div>
+      <div class="shop-item-desc">${btcInv.desc}
+        <br/><span class="${mCls}" style="font-size:10px">行情 ${sign}${pct}% · ${fmtMoney(btcPerSec)}/s</span>
+      </div>
+      <div class="shop-item-footer">
+        <span class="shop-yield dim">高风险・可卖出</span>
+        <button class="shop-btn ${btcAfford ? '' : 'disabled'}" data-key="btc">${fmtMoney(btcInv.price)}</button>
+      </div>
+    </div>`;
+
+    el.innerHTML = bondsItem + btcItem;
     el.querySelectorAll('.shop-btn:not(.disabled)').forEach(btn => {
       btn.addEventListener('click', () => onBuy(btn.dataset.key));
     });
@@ -272,38 +289,37 @@ const UI = (() => {
     if (!el) return;
 
     const TIER_DEFS = [
-      { type: 'keyboard', label: '键盘',  tiers: KEYBOARD_TIERS },
-      { type: 'monitor',  label: '显示器', tiers: MONITOR_TIERS },
-      { type: 'chair',    label: '椅子',  tiers: CHAIR_TIERS },
-      { type: 'ai',       label: 'AI助手', tiers: AI_TIERS },
+      { type: 'keyboard', labelKey: 'upgrade.keyboard', tiers: KEYBOARD_TIERS },
+      { type: 'monitor',  labelKey: 'upgrade.monitor',  tiers: MONITOR_TIERS },
+      { type: 'chair',    labelKey: 'upgrade.chair',    tiers: CHAIR_TIERS },
+      { type: 'ai',       labelKey: 'upgrade.ai',       tiers: AI_TIERS },
     ];
 
     el.innerHTML = TIER_DEFS.map(def => {
       const currentLevel = (p.tierLevels && p.tierLevels[def.type]) || 0;
-      const current = def.tiers.find(t => t.level === currentLevel);
-      const next    = def.tiers.find(t => t.level === currentLevel + 1);
+      const current = def.tiers.find(tr => tr.level === currentLevel);
+      const next    = def.tiers.find(tr => tr.level === currentLevel + 1);
       const maxed   = !next;
       const canAfford = next && p.money >= next.cost;
       const disabled  = maxed || !canAfford;
 
       const statusLabel = current
-        ? `<span class="neon-cyan" style="font-size:10px">当前：${current.label}</span>`
-        : `<span class="dim" style="font-size:10px">未配置</span>`;
+        ? `<span class="neon-cyan" style="font-size:10px">${current.label}</span>`
+        : `<span class="dim" style="font-size:10px">${t('config.empty')}</span>`;
 
-      const btnLabel = maxed ? '已满级 ✓' : next ? fmtMoney(next.cost) : '─';
+      const btnLabel = maxed ? t('upgrade.maxed') : next ? fmtMoney(next.cost) : '─';
       const nextDesc = next ? next.desc : (current ? current.desc : '');
       const nextBonus = next
-        ? (def.type === 'ai' ? `每${next.autoClickInterval/1000}秒自动敲一次` : `+¥${next.bonus}/click`)
+        ? (def.type === 'ai' ? `${next.autoClickInterval/1000}s/click` : `+¥${next.bonus}/click`)
         : '';
 
-      // AI 拥有等级后，额外显示「启动运行」按钮
       const aiRunBtn = (def.type === 'ai' && currentLevel > 0)
-        ? `<button class="shop-btn ai-run-btn" data-type="ai-run">▶ 启动运行</button>`
+        ? `<button class="shop-btn ai-run-btn" data-type="ai-run">${t('upgrade.ai.run')}</button>`
         : '';
 
       return `<div class="shop-item ${disabled ? 'locked' : ''}">
         <div class="shop-item-header">
-          <span>${next ? next.emoji : (current ? current.emoji : '⬜')} ${def.label}</span>
+          <span>${next ? next.emoji : (current ? current.emoji : '⬜')} ${t(def.labelKey)}</span>
           ${statusLabel}
         </div>
         <div class="shop-item-desc">${nextDesc}</div>
@@ -333,7 +349,7 @@ const UI = (() => {
       const canAfford = p.money >= item.cost;
       const onCooldown = !p.canUseShop(item.id, item.cooldown);
       const disabled  = !canAfford || onCooldown;
-      const cooldownLabel = onCooldown ? ' (冷却中)' : '';
+      const cooldownLabel = onCooldown ? t('shop.cooldown') : '';
       return `<div class="shop-item ${disabled ? 'locked' : ''}">
         <div class="shop-item-header">
           <span>${item.emoji} ${item.label}${cooldownLabel}</span>
@@ -341,7 +357,7 @@ const UI = (() => {
         <div class="shop-item-desc">${item.desc}</div>
         <div class="shop-item-footer">
           <button class="shop-btn ${disabled ? 'disabled' : ''}" data-id="${item.id}">
-            ${item.cost === 0 ? '免费' : fmtMoney(item.cost)}
+            ${item.cost === 0 ? t('shop.free') : fmtMoney(item.cost)}
           </button>
         </div>
       </div>`;
@@ -361,7 +377,7 @@ const UI = (() => {
     choicesEl.innerHTML = '';
     typewrite(textEl, event.text, 20, () => {
       const choices = event.choices && event.choices.length ? event.choices
-        : [{ label: '── 继续 ──', reply: '', changes: {}, tone: 'neutral' }];
+        : [{ label: t('choice.continue'), reply: '', changes: {}, tone: 'neutral' }];
       choices.forEach(c => {
         const btn = document.createElement('button');
         btn.className = 'choice-btn';
@@ -495,14 +511,14 @@ const UI = (() => {
     modal.className = 'story-overlay';
 
     const entries = storyLog.length === 0
-      ? '<div class="story-empty dim">还没有记录任何故事。<br/>去游戏里触发它们吧。</div>'
+      ? `<div class="story-empty dim">${t('story.empty')}</div>`
       : storyLog.map((s, i) => `
           <div class="story-card" id="story-${i}">
             <div class="story-card-header">
               <span class="story-emoji">${s.emoji}</span>
               <span class="story-title">${s.title}</span>
               <span class="story-meta dim">Day ${s.day} · ${s.time}</span>
-              <button class="story-toggle" data-idx="${i}">展开</button>
+              <button class="story-toggle" data-idx="${i}">${t('story.expand')}</button>
             </div>
             <div class="story-body hidden" id="story-body-${i}">
               <div class="story-text">${s.text.replace(/\n/g, '<br/>')}</div>
@@ -512,9 +528,9 @@ const UI = (() => {
 
     modal.innerHTML = `
       <div class="story-box">
-        <div class="story-box-title neon-cyan">── 物 語 ──</div>
+        <div class="story-box-title neon-cyan">${t('story.title')}</div>
         <div class="story-list">${entries}</div>
-        <button class="menu-btn secondary small" id="story-close">[ 关闭 ]</button>
+        <button class="menu-btn secondary small" id="story-close">${t('story.close')}</button>
       </div>`;
 
     document.body.appendChild(modal);
@@ -526,7 +542,7 @@ const UI = (() => {
         const body = document.getElementById(`story-body-${idx}`);
         const open = !body.classList.contains('hidden');
         body.classList.toggle('hidden', open);
-        btn.textContent = open ? '展开' : '收起';
+        btn.textContent = open ? t('story.expand') : t('story.collapse');
       });
     });
 

@@ -17,7 +17,16 @@
       "Bash(git commit *)",
       "Bash(git remote *)",
       "Bash(git push *)",
-      "Bash(git *)"
+      "Bash(git *)",
+      "Bash(node --check js/i18n.js)",
+      "Bash(node --check js/events.js)",
+      "Bash(/usr/local/bin/node --check js/i18n.js)",
+      "Bash(npx --yes acorn --ecma2020 js/i18n.js)",
+      "Read(//usr/local/bin/**)",
+      "Read(//Users/bahamas/.nvm/versions/**)",
+      "Bash(command -v node deno bun)",
+      "Read(//opt/homebrew/bin/**)",
+      "Read(//Users/bahamas/**)"
     ]
   }
 }
