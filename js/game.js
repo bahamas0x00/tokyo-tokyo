@@ -126,6 +126,19 @@ const Game = (() => {
 
   // ── shops ─────────────────────────────────────────────────
   function renderShops() {
+    // 卖出回调注册到全局，供 updatePortfolio 使用
+    window._onSellCallback = key => {
+      const result = player.sellInvestment(key);
+      if (!result) return;
+      const inv = INVESTMENTS[key];
+      const gainStr = (result.gain >= 0 ? '+' : '') + fmtMoney(result.gain);
+      UI.appendLog(`卖出 ${inv.emoji} ${inv.label}，实现收益 ${gainStr}`, result.gain >= 0 ? 'good' : 'bad');
+      UI.toast(`${inv.label} 已卖出 ${gainStr}`);
+      UI.updateStats(player);
+      renderShops();
+      save();
+    };
+
     UI.renderInvestShop(player, key => {
       if (player.buyInvestment(key)) {
         const inv = INVESTMENTS[key];

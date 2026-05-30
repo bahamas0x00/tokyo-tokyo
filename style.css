@@ -98,6 +98,11 @@ html, body { height: 100%; overflow: hidden; background: var(--bg); color: var(-
 .money-sub { font-family: var(--font-m); font-size: 11px; color: var(--dim); text-align: center; }
 
 .config-row { display: flex; align-items: center; gap: 8px; font-size: 11px; font-family: var(--font-m); padding: 2px 0; }
+.portfolio-card { border: 1px solid var(--border); padding: 8px 10px; display: flex; flex-direction: column; gap: 5px; }
+.portfolio-detail { display: grid; grid-template-columns: 1fr 1fr; gap: 2px 8px; font-size: 10px; font-family: var(--font-m); }
+.portfolio-summary { border-top: 1px solid var(--border); padding-top: 6px; margin-top: 4px; display: flex; flex-direction: column; gap: 3px; }
+.sell-btn { background: transparent; border: 1px solid var(--pink); color: var(--pink); font-family: var(--font-m); font-size: 10px; padding: 2px 8px; cursor: pointer; transition: all .15s; }
+.sell-btn:hover { background: #ff2d7818; }
 .portfolio-row, .market-row { display: flex; justify-content: space-between; align-items: center; font-size: 11px; font-family: var(--font-m); gap: 4px; }
 
 /* ── center panel ── */

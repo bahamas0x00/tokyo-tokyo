@@ -23,7 +23,7 @@ const UI = (() => {
     setText('val-health',    Math.floor(p.health));
     setText('val-happiness', Math.floor(p.happiness));
     updateConfig(p);
-    updatePortfolio(p);
+    updatePortfolio(p, window._onSellCallback);
     updateMarket(p);
   }
 
@@ -64,20 +64,59 @@ const UI = (() => {
     }).join('');
   }
 
-  function updatePortfolio(p) {
+  function updatePortfolio(p, onSell) {
     const el = document.getElementById('portfolio-display');
     if (!el) return;
+
+    const unrealized = p.unrealizedGain || 0;
+    const realized   = p.realizedGains  || 0;
+
+    const hasAny = Object.values(p.portfolio).some(pos => (pos?.qty || 0) > 0);
+
     const rows = Object.entries(INVESTMENTS).map(([key, inv]) => {
-      const count = p.portfolio[key] || 0;
-      const perSec = count * inv.basePerSec * p.market[key];
-      if (count === 0) return '';
-      return `<div class="portfolio-row">
-        <span>${inv.emoji} ${inv.label}</span>
-        <span class="neon-cyan">×${count}</span>
-        <span class="neon-green">${fmtMoney(perSec)}/s</span>
+      const pos = p.portfolio[key];
+      const qty = pos?.qty || 0;
+      if (qty === 0) return '';
+      const currentPrice = inv.price * (p.market[key] || 1);
+      const totalValue   = currentPrice * qty;
+      const cost         = pos.totalCost || 0;
+      const gain         = totalValue - cost;
+      const gainCls      = gain >= 0 ? 'neon-green' : 'neon-pink';
+      const gainSign     = gain >= 0 ? '+' : '';
+      const perSec       = qty * inv.basePerSec * (p.market[key] || 1);
+
+      return `<div class="portfolio-card">
+        <div class="portfolio-row">
+          <span>${inv.emoji} ${inv.label} ×${qty}</span>
+          <button class="sell-btn" data-key="${key}">卖出</button>
+        </div>
+        <div class="portfolio-detail">
+          <span class="dim">市值</span><span>${fmtMoney(totalValue)}</span>
+          <span class="dim">成本</span><span>${fmtMoney(cost)}</span>
+          <span class="dim">浮盈</span><span class="${gainCls}">${gainSign}${fmtMoney(gain)}</span>
+          <span class="dim">/s</span><span class="neon-green">${fmtMoney(perSec)}</span>
+        </div>
       </div>`;
     }).join('');
-    el.innerHTML = rows || '<div class="dim small">尚无投资</div>';
+
+    const summary = `<div class="portfolio-summary">
+      <div class="portfolio-row">
+        <span class="dim">未实现</span>
+        <span class="${unrealized >= 0 ? 'neon-green' : 'neon-pink'}">${unrealized >= 0 ? '+' : ''}${fmtMoney(unrealized)}</span>
+      </div>
+      <div class="portfolio-row">
+        <span class="dim">已实现</span>
+        <span class="${realized >= 0 ? 'neon-green' : 'neon-pink'}">${realized >= 0 ? '+' : ''}${fmtMoney(realized)}</span>
+      </div>
+    </div>`;
+
+    el.innerHTML = (hasAny ? rows + summary : '<div class="dim small">尚无投资</div>');
+
+    if (onSell) {
+      el.querySelectorAll('.sell-btn').forEach(btn => {
+        btn.addEventListener('click', () => onSell(btn.dataset.key));
+      });
+    }
   }
 
   function updateMarket(p) {

@@ -17,11 +17,11 @@ class Player {
     // ── 投资组合 ──
     this.tierLevels = { keyboard: 0, monitor: 0, chair: 0, ai: 0 };
 
-    // ── 投资组合 ──
+    // ── 投资组合 { qty, totalCost } ──
     this.portfolio = {
-      bonds:  0,   // 日本国債
-      stocks: 0,   // 株式
-      btc:    0,   // 比特币
+      bonds:  { qty: 0, totalCost: 0 },
+      stocks: { qty: 0, totalCost: 0 },
+      btc:    { qty: 0, totalCost: 0 },
     };
 
     // ── 市场行情 (multiplier, 基础1.0) ──
@@ -30,6 +30,8 @@ class Player {
       stocks: 1.0,
       btc:    1.0,
     };
+
+    this.realizedGains = 0;   // 累计已实现收益
 
     // ── 故事档案（只存真实经历）──
     this.storyLog  = [];   // [{ title, emoji, text, reply, day, time, tone }]
@@ -58,12 +60,27 @@ class Player {
 
   // ── 被动收益 / 秒 ────────────────────────────────────────────
   get passivePerSec() {
-    const b = INVESTMENTS;
-    return (
-      this.portfolio.bonds  * b.bonds.basePerSec  * this.market.bonds  +
-      this.portfolio.stocks * b.stocks.basePerSec * this.market.stocks +
-      this.portfolio.btc    * b.btc.basePerSec    * this.market.btc
-    );
+    return Object.entries(INVESTMENTS).reduce((sum, [key, inv]) => {
+      const qty = this.portfolio[key]?.qty || 0;
+      return sum + qty * inv.basePerSec * (this.market[key] || 1);
+    }, 0);
+  }
+
+  // ── 未实现收益（纸面盈亏）────────────────────────────────────
+  get unrealizedGain() {
+    return Object.entries(INVESTMENTS).reduce((sum, [key, inv]) => {
+      const pos = this.portfolio[key];
+      if (!pos || pos.qty === 0) return sum;
+      const currentPrice = inv.price * (this.market[key] || 1);
+      return sum + (currentPrice * pos.qty - pos.totalCost);
+    }, 0);
+  }
+
+  // ── 当前市值 ──────────────────────────────────────────────────
+  positionValue(type) {
+    const pos = this.portfolio[type];
+    if (!pos || pos.qty === 0) return 0;
+    return INVESTMENTS[type].price * (this.market[type] || 1) * pos.qty;
   }
 
   // ── 每秒 tick（被动收入 + 状态衰减）──────────────────────────
@@ -105,8 +122,23 @@ class Player {
     const inv = INVESTMENTS[type];
     if (!inv || !this.canAfford(inv.price)) return false;
     this.money -= inv.price;
-    this.portfolio[type]++;
+    const pos = this.portfolio[type];
+    pos.qty++;
+    pos.totalCost += inv.price;   // 记录买入成本
     return true;
+  }
+
+  sellInvestment(type) {
+    const pos = this.portfolio[type];
+    const inv = INVESTMENTS[type];
+    if (!pos || pos.qty === 0) return null;
+    const currentValue = this.positionValue(type);
+    const gain         = currentValue - pos.totalCost;
+    this.money        += currentValue;
+    this.realizedGains += gain;
+    pos.qty       = 0;
+    pos.totalCost = 0;
+    return { gain, value: currentValue, qty: pos.qty };
   }
 
   // 分级升级：type = 'keyboard'|'monitor'|'chair'|'ai'
@@ -182,7 +214,14 @@ class Player {
   static fromJSON(d) {
     const p = new Player(d.name);
     Object.assign(p, d);
-    p.lastTick = Date.now(); // reset tick on load
+    // 旧存档兼容：portfolio 值为数字时迁移为对象格式
+    for (const key of ['bonds', 'stocks', 'btc']) {
+      if (typeof p.portfolio[key] === 'number') {
+        const qty = p.portfolio[key];
+        p.portfolio[key] = { qty, totalCost: qty * (INVESTMENTS[key]?.price || 0) };
+      }
+    }
+    p.lastTick = Date.now();
     return p;
   }
 }
