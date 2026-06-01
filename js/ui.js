@@ -34,6 +34,11 @@ const UI = (() => {
     });
     const office = document.getElementById('btn-click');
     if (office) office.classList.toggle('sick', p.isSick);
+    // 空状态栏隐藏：後輩累计行 / 市场行情栏（无内容不显示）
+    const ker = document.getElementById('kohai-earned-row');
+    if (ker) ker.style.display = ((p.autoStaff?.kohai || 0) > 0 || (p.kohaiEarned || 0) > 0) ? '' : 'none';
+    const md = document.getElementById('market-display');
+    if (md) md.closest('.panel-section').style.display = md.children.length ? '' : 'none';
     updateConfig(p);
     updatePortfolio(p, window._onSellCallback);
     updateTeamPanel(p);
@@ -121,6 +126,9 @@ const UI = (() => {
       </div>`;
     }
     el.innerHTML = html;
+    // 开局未拥有任何设备/AI/後輩时整栏隐藏，有了才出现
+    const owns = ['keyboard', 'monitor', 'chair', 'ai'].some(k => (levels[k] || 0) >= 1) || kohaiCount > 0;
+    el.closest('.panel-section').style.display = owns ? '' : 'none';
   }
 
   function updatePortfolio(p, onSell) {
@@ -133,9 +141,11 @@ const UI = (() => {
     const hasBtc   = btcQty   > 0;
 
     if (!hasBonds && !hasBtc) {
-      el.innerHTML = `<div class="dim small">${t('portfolio.empty')}</div>`;
+      el.innerHTML = '';
+      el.closest('.panel-section').style.display = 'none';  // 无投资时整栏隐藏
       return;
     }
+    el.closest('.panel-section').style.display = '';
 
     let html = '';
 
@@ -533,7 +543,7 @@ const UI = (() => {
 
   // ── toast ──────────────────────────────────────────────────
   let _toastEl = null, _toastT = null;
-  function toast(msg, ms = 2000) {
+  function toast(msg, ms = 2800) {
     if (!_toastEl) {
       _toastEl = document.createElement('div');
       _toastEl.className = 'toast';

@@ -460,7 +460,7 @@ html, body { height: 100%; overflow: hidden; background: var(--bg); color: var(-
 .dur-profit { font-size: 9px; color: var(--green); }
 
 /* ── toast ── */
-.toast { position: fixed; bottom: 28px; left: 50%; transform: translateX(-50%) translateY(12px); background: var(--bg2); border: 3px solid var(--cyan); color: var(--cyan); font-family: var(--font-px); font-size: 9px; padding: 10px 22px; box-shadow: 4px 4px 0 #004080; opacity: 0; transition: all .2s steps(4); z-index: 9999; pointer-events: none; }
+.toast { position: fixed; bottom: 28px; left: 50%; transform: translateX(-50%) translateY(12px); background: var(--bg2); border: 3px solid var(--cyan); color: var(--cyan); font-family: var(--font-dot); font-size: 14px; padding: 11px 22px; box-shadow: 4px 4px 0 #004080; opacity: 0; transition: all .2s steps(4); z-index: 9999; pointer-events: none; }
 .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
 
 /* ── scrollbar ── */
