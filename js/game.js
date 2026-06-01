@@ -166,10 +166,6 @@ const Game = (() => {
       save();
     };
 
-    UI.renderAutoShop(player, id => {
-      if (id === 'kohai-apply') { submitHRApplication(); return; }
-    });
-
     UI.renderInvestShop(player, key => {
       if (player.buyInvestment(key)) {
         const inv = INVESTMENTS[key];

@@ -470,21 +470,22 @@ html, body { height: 100%; overflow: hidden; background: var(--bg); color: var(-
 @keyframes blink { 50% { opacity: 0; } }
 
 /* ═══════════════════════════════════════════════════════════════
-   TITLE & LANGUAGE SCREEN POLISH  (像素霓虹·提升精致度)
-   单独成块，便于回滚。仅作用于 #screen-title / #screen-lang。
+   TITLE & LANGUAGE SCREEN  (重度像素粗犷风：硬边/实色/抖动/steps)
+   单独成块，便于回滚。仅作用于 #screen-title / #lang-modal。
    ═══════════════════════════════════════════════════════════════ */
 
 /* —— 全局 CRT 扫描线（此前 .scanlines 在 HTML 里存在但无样式）—— */
 .scanlines {
   position: fixed; inset: 0; z-index: 9000; pointer-events: none;
   background: repeating-linear-gradient(
-    0deg, rgba(0,0,0,0) 0 2px, rgba(0,0,0,.16) 2px 3px);
-  opacity: .55;
+    0deg, rgba(0,0,0,0) 0 3px, rgba(0,0,0,.22) 3px 4px);
+  opacity: .6;
   mix-blend-mode: multiply;
 }
-.scanlines::after { /* 极淡的霓虹色偏移 + 缓慢扫光 */
-  content: ''; position: absolute; inset: 0;
-  background: linear-gradient(rgba(84,160,255,.025), rgba(255,107,107,.025));
+.scanlines::after { /* 像素抖动纹理（棋盘格）*/
+  content: ''; position: absolute; inset: 0; opacity: .05;
+  background-image: repeating-conic-gradient(#fff 0% 25%, #000 0% 50%);
+  background-size: 4px 4px;
 }
 
 /* —— 标题/语言页：氛围背景（径向辉光 + 像素网格，向中心聚拢）—— */
@@ -492,18 +493,9 @@ html, body { height: 100%; overflow: hidden; background: var(--bg); color: var(-
   position: relative;
   overflow: hidden;
   background:
-    radial-gradient(120% 78% at 50% 28%, rgba(84,160,255,.12), transparent 58%),
-    radial-gradient(90% 60% at 50% 116%, rgba(255,107,107,.12), transparent 60%),
+    linear-gradient(rgba(84,160,255,.06) 2px, transparent 2px) 0 0 / 32px 32px,
+    linear-gradient(90deg, rgba(84,160,255,.06) 2px, transparent 2px) 0 0 / 32px 32px,
     var(--bg);
-}
-#screen-title::before {
-  content: ''; position: absolute; inset: 0; pointer-events: none; z-index: 0;
-  background-image:
-    linear-gradient(rgba(84,160,255,.045) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(84,160,255,.045) 1px, transparent 1px);
-  background-size: 34px 34px;
-  -webkit-mask-image: radial-gradient(circle at 50% 42%, #000 28%, transparent 74%);
-          mask-image: radial-gradient(circle at 50% 42%, #000 28%, transparent 74%);
 }
 #screen-title > * { position: relative; z-index: 1; }
 
@@ -511,34 +503,29 @@ html, body { height: 100%; overflow: hidden; background: var(--bg); color: var(-
 .lang-modal {
   position: fixed; inset: 0; z-index: 9500;
   display: flex; align-items: center; justify-content: center;
-  background: rgba(8, 7, 15, .82);
-  -webkit-backdrop-filter: blur(3px); backdrop-filter: blur(3px);
-  animation: modalFade .2s ease-out;
+  background: rgba(8, 7, 15, .9);
+  animation: modalFade .12s steps(2);
 }
 @keyframes modalFade { from { opacity: 0; } to { opacity: 1; } }
-.lang-modal .lang-select-box { animation: modalPop .26s cubic-bezier(.2,.9,.3,1.15); }
-@keyframes modalPop { from { transform: scale(.92); } to { transform: scale(1); } }
+.lang-modal .lang-select-box { animation: modalPop .2s steps(3); }
+@keyframes modalPop { from { transform: scale(.9); } to { transform: scale(1); } }
 
 /* —— 标题：霓虹辉光 + 轻微漂浮 + 下方装饰分隔线 —— */
-.title-art { text-align: center; animation: titleFloat 6s ease-in-out infinite; }
+.title-art { text-align: center; animation: titleFloat 1.4s steps(2) infinite; }
 .title-jp {
-  text-shadow:
-    3px 3px 0 #c0392b, 5px 5px 0 #7f1d1d,
-    0 0 16px rgba(254,202,87,.45),
-    0 0 36px rgba(255,107,107,.28);
+  text-shadow: 3px 3px 0 #c0392b, 6px 6px 0 #7f1d1d, 9px 9px 0 #3a0a0a;
 }
-.title-sub  { text-shadow: 0 0 10px rgba(255,159,67,.5); }
+.title-sub  { text-shadow: 2px 2px 0 #7a4000; }
 .title-art::after {
-  content: ''; display: block; height: 2px; width: 0; margin: 20px auto 0;
-  background: linear-gradient(90deg, transparent, var(--cyan), var(--pink), transparent);
-  box-shadow: 0 0 10px rgba(84,160,255,.6);
-  animation: dividerGrow 1s ease-out .35s forwards;
+  content: ''; display: block; height: 4px; width: 0; margin: 18px auto 0;
+  background: repeating-linear-gradient(90deg, var(--cyan) 0 6px, transparent 6px 12px);
+  animation: dividerGrow .6s steps(8) .3s forwards;
 }
-@keyframes titleFloat { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-5px); } }
-@keyframes dividerGrow { to { width: min(420px, 72vw); } }
+@keyframes titleFloat { 0% { transform: translateY(0); } 50% { transform: translateY(-4px); } 100% { transform: translateY(0); } }
+@keyframes dividerGrow { to { width: min(360px, 70vw); } }
 
 /* —— 入场：逐项错峰浮现 —— */
-@keyframes riseIn { from { opacity: 0; transform: translateY(16px); } to { opacity: 1; transform: none; } }
+@keyframes riseIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: none; } }
 #screen-title.active .title-jp,
 #screen-title.active .title-sub,
 #screen-title.active .title-desc,
@@ -547,7 +534,7 @@ html, body { height: 100%; overflow: hidden; background: var(--bg); color: var(-
 #lang-modal:not(.hidden) .lang-select-title,
 #lang-modal:not(.hidden) .lang-select-sub,
 #lang-modal:not(.hidden) .lang-opt {
-  opacity: 0; animation: riseIn .55s cubic-bezier(.2,.8,.2,1) forwards;
+  opacity: 0; animation: riseIn .3s steps(4) forwards;
 }
 #screen-title.active .title-jp   { animation-delay: .05s; }
 #screen-title.active .title-sub  { animation-delay: .15s; }
@@ -567,32 +554,32 @@ html, body { height: 100%; overflow: hidden; background: var(--bg); color: var(-
 /* —— 菜单按钮：悬停辉光 + 滑入指示符 + 可见焦点环 —— */
 .menu-btn { position: relative; }
 .menu-btn::before {
-  content: '▸'; position: absolute; left: 12px; top: 50%; transform: translateY(-50%);
-  opacity: 0; transition: opacity .12s ease, left .12s ease;
+  content: '▶'; position: absolute; left: 10px; top: 50%; transform: translateY(-50%);
+  opacity: 0; transition: opacity .1s steps(1), left .1s steps(2);
 }
-.menu-btn:hover:not(:disabled)::before { opacity: 1; left: 18px; }
-.menu-btn:hover:not(:disabled)            { box-shadow: 6px 6px 0 #7a4000, 0 0 20px rgba(255,159,67,.4); }
-.menu-btn.secondary:hover:not(:disabled)  { box-shadow: 6px 6px 0 #004080, 0 0 20px rgba(84,160,255,.4); }
-.menu-btn:focus-visible { outline: 3px solid var(--gold); outline-offset: 3px; }
+.menu-btn:hover:not(:disabled)::before { opacity: 1; left: 16px; }
+.menu-btn:hover:not(:disabled)            { box-shadow: 6px 6px 0 #7a4000; }
+.menu-btn.secondary:hover:not(:disabled)  { box-shadow: 6px 6px 0 #004080; }
+.menu-btn:focus-visible { outline: 3px solid var(--gold); outline-offset: 2px; }
 
 /* —— 语言选择卡片 —— */
 .lang-select-box {
-  padding: 30px 40px 34px;
-  border: 3px solid var(--cyan);
-  background: rgba(22,33,62,.45);
-  box-shadow: 0 0 0 2px #000, 0 0 30px rgba(84,160,255,.2), inset 0 0 26px rgba(84,160,255,.05);
+  padding: 28px 36px 32px;
+  border: 4px solid var(--cyan);
+  background: var(--bg2);
+  box-shadow: 0 0 0 4px #000, 8px 8px 0 #06263f;
 }
-.lang-select-title { text-shadow: 0 0 14px rgba(84,160,255,.55); }
+.lang-select-title { text-shadow: 2px 2px 0 #06263f; }
 .lang-opt.selected {
-  box-shadow: 6px 6px 0 #7a4000, 0 0 22px rgba(255,159,67,.6);
+  box-shadow: 6px 6px 0 #7a4000;
 }
 
 /* —— 标题底部时钟：做成小徽标 —— */
 .title-time {
-  padding: 7px 14px;
-  border: 2px solid var(--dim);
-  background: rgba(15,14,23,.6);
-  box-shadow: 0 0 14px rgba(0,0,0,.5);
+  padding: 6px 12px;
+  border: 3px solid var(--dim);
+  background: var(--bg);
+  box-shadow: 4px 4px 0 #000;
 }
 
 /* —— 无障碍：减少动态偏好时直接呈现，避免停留在透明 —— */
@@ -604,51 +591,49 @@ html, body { height: 100%; overflow: hidden; background: var(--bg); color: var(-
 }
 
 /* ═══════════════════════════════════════════════════════════════
-   GAME SCREEN POLISH  (主界面·与标题页同档精致度)
-   纯视觉，保持像素霓虹；单独成块便于回滚。
+   GAME SCREEN  (主界面·重度像素粗犷风)
+   纯视觉，硬边像素；单独成块便于回滚。
    ═══════════════════════════════════════════════════════════════ */
 
 /* 左右栏：内侧氛围阴影，增加纵深 */
-.left-panel  { box-shadow: inset -14px 0 28px rgba(0,0,0,.28); }
-.right-panel { box-shadow: inset  14px 0 28px rgba(0,0,0,.28); }
+.left-panel  { box-shadow: inset -3px 0 0 rgba(0,0,0,.4); }
+.right-panel { box-shadow: inset  3px 0 0 rgba(0,0,0,.4); }
 
-/* 面板标题：橙色辉光 + 青→粉辉光分隔线（呼应标题页）*/
-.panel-title { position: relative; padding-bottom: 8px; text-shadow: 0 0 8px rgba(255,159,67,.4); }
+/* 面板标题：硬描边 + 橙色像素虚线分隔 */
+.panel-title { position: relative; padding-bottom: 8px; text-shadow: 2px 2px 0 #000; }
 .panel-title::after {
   content: ''; position: absolute; left: 50%; bottom: 0; transform: translateX(-50%);
-  width: 62%; height: 2px;
-  background: linear-gradient(90deg, transparent, rgba(84,160,255,.75), rgba(255,107,107,.75), transparent);
-  box-shadow: 0 0 8px rgba(84,160,255,.4);
+  width: 72%; height: 3px;
+  background: repeating-linear-gradient(90deg, var(--orange) 0 4px, transparent 4px 8px);
 }
 
-/* 金额：金色霓虹辉光 */
-.money-display { text-shadow: 2px 2px 0 #7a4000, 0 0 16px rgba(254,202,87,.5); }
+/* 金额：硬偏移阴影 */
+.money-display { text-shadow: 2px 2px 0 #7a4000, 4px 4px 0 #000; }
 
-/* 头部信息条：内描边 + 底部橙色光带 */
+/* 头部信息条：硬内描边 + 硬偏移 + 底部像素虚线 */
 .game-header-bar {
   position: relative;
-  border-color: rgba(255,159,67,.55);
-  box-shadow: inset 0 0 0 1px rgba(0,0,0,.45), 0 3px 14px rgba(0,0,0,.4);
+  border-color: rgba(255,159,67,.6);
+  box-shadow: inset 0 0 0 2px rgba(0,0,0,.5), 4px 4px 0 #000;
 }
 .game-header-bar::after {
   content: ''; position: absolute; left: 0; right: 0; bottom: -2px; height: 2px;
-  background: linear-gradient(90deg, var(--orange), rgba(255,159,67,0) 65%);
-  opacity: .55;
+  background: repeating-linear-gradient(90deg, var(--orange) 0 4px, transparent 4px 8px);
 }
 
-/* 点击区：淡青色环境辉光 */
-.pixel-office { box-shadow: 4px 4px 0 #7a4000, 0 0 26px rgba(84,160,255,.12); }
+/* 点击区：硬偏移阴影 */
+.pixel-office { box-shadow: 6px 6px 0 #7a4000; }
 
-/* 商店卡片：默认描边带一点暖色，悬停辉光抬升 */
-.shop-item { border-color: rgba(255,159,67,.24); }
+/* 商店卡片：硬描边，悬停硬偏移 */
+.shop-item { border-color: rgba(255,159,67,.3); }
 .shop-item:hover:not(.locked) {
   border-color: var(--border);
-  box-shadow: 0 0 14px rgba(255,159,67,.2);
+  box-shadow: 4px 4px 0 #7a4000;
 }
-.shop-btn:hover:not(.disabled) { box-shadow: 3px 3px 0 #004080, 0 0 12px rgba(84,160,255,.45); }
+.shop-btn:hover:not(.disabled) { box-shadow: 3px 3px 0 #004080; }
 
-/* 投资卡片：暖色描边统一 */
-.portfolio-card { border-color: rgba(255,159,67,.3); box-shadow: inset 0 0 12px rgba(0,0,0,.3); }
+/* 投资卡片：暖色硬描边 */
+.portfolio-card { border-color: rgba(255,159,67,.4); }
 
-/* 新建角色页：与标题页一致的辉光边框 */
-.create-box { box-shadow: 6px 6px 0 #7a4000, 0 0 30px rgba(255,159,67,.12); }
+/* 新建角色页：硬偏移阴影 */
+.create-box { box-shadow: 8px 8px 0 #7a4000; }

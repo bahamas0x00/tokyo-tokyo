@@ -279,7 +279,11 @@ const UI = (() => {
       </div>
     </div>`;
 
-    el.innerHTML = bondsItem + btcItem;
+    // 渐进解锁：已持有 或 余额接近售价 才显示
+    const bondsShown = bondsQty > 0 || p.isRevealed(bondsInv.price);
+    const btcShown   = btcQty   > 0 || p.isRevealed(btcInv.price);
+    el.closest('.panel-section').style.display = (bondsShown || btcShown) ? '' : 'none';
+    el.innerHTML = (bondsShown ? bondsItem : '') + (btcShown ? btcItem : '');
     el.querySelectorAll('.shop-btn:not(.disabled)').forEach(btn => {
       btn.addEventListener('click', () => onBuy(btn.dataset.key));
     });
@@ -296,7 +300,16 @@ const UI = (() => {
       { type: 'ai',       labelKey: 'upgrade.ai',       tiers: AI_TIERS },
     ];
 
-    el.innerHTML = TIER_DEFS.map(def => {
+    // 渐进解锁：已拥有 或 余额接近下一级售价 才显示
+    const visibleDefs = TIER_DEFS.filter(def => {
+      const lv  = (p.tierLevels && p.tierLevels[def.type]) || 0;
+      const cur = def.tiers.find(tr => tr.level === lv);
+      const nxt = def.tiers.find(tr => tr.level === lv + 1);
+      return cur || (nxt && p.isRevealed(nxt.cost));
+    });
+    el.closest('.panel-section').style.display = visibleDefs.length ? '' : 'none';
+
+    el.innerHTML = visibleDefs.map(def => {
       const currentLevel = (p.tierLevels && p.tierLevels[def.type]) || 0;
       const current = def.tiers.find(tr => tr.level === currentLevel);
       const next    = def.tiers.find(tr => tr.level === currentLevel + 1);
@@ -336,7 +349,10 @@ const UI = (() => {
   function renderLifeShop(p, onBuy) {
     const el = document.getElementById('life-shop');
     if (!el) return;
-    el.innerHTML = SHOP_ITEMS.map(item => {
+    // 渐进解锁：余额接近售价才显示（免费/便宜项很早就出现）
+    const items = SHOP_ITEMS.filter(item => p.isRevealed(item.cost));
+    el.closest('.panel-section').style.display = items.length ? '' : 'none';
+    el.innerHTML = items.map(item => {
       const canAfford = p.money >= item.cost;
       const onCooldown = !p.canUseShop(item.id, item.cooldown);
       const disabled  = !canAfford || onCooldown;

@@ -6,6 +6,12 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 **東京社畜** — 网页版「东京打工人」主题的放置/点击游戏（Cookie Clicker 风格）。扮演一个不会日语、被公司外派到东京的程序员，通过**点击敲代码**赚钱，购买设备升级、AI 助手、压榨後輩、做投资，并在随机事件与「物語」剧情里体验东京社畜的孤独日常。无结局，无限进行。界面支持**中 / 日 / 英三语**实时切换。
 
+## 世界设定文档（必读 · 需同步维护）
+
+**`GAME_DESIGN.md` 是游戏世界设定的单一事实来源**（所有数值、道具、价格、效果、事件、解锁阈值、职级、市场、机制）。
+
+> ⚠️ **强制约定**：任何改动游戏数据或机制后（包括但不限于 `js/player.js` 的 `INVESTMENTS / SHOP_ITEMS / *_TIERS / AUTO_STAFF / MARKET_EVENTS / REVEAL_RATIO / 衰减率 / 职级`，`js/events.js` 的事件，或相关玩法逻辑/数值），**必须在同一次改动里同步更新 `GAME_DESIGN.md` 的对应小节**，保持文档与代码一致。新增机制要补章节；改数值要改表格；移除功能要在「已知缺口/待办」标注。
+
 ## Running
 
 纯静态网页，无需构建。直接在浏览器打开：
