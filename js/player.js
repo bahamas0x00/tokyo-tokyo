@@ -1,5 +1,7 @@
 'use strict';
 
+const REVEAL_RATIO = 0.7;  // 余额达到售价的 70% 时，道具出现在商店里
+
 class Player {
   constructor(name) {
     this.name      = name;
@@ -9,6 +11,7 @@ class Player {
     this.happiness = 60;
     this.money     = 0;           // 当前余额
     this.totalEarned = 0;         // 累计赚过的钱
+    this.peakMoney = 0;           // 历史最高余额（渐进解锁用，单调不减）
 
     // ── 点击系统 ──
     this.baseClickValue = 100;    // ¥/click 基础值
@@ -146,13 +149,14 @@ class Player {
     this.happiness = clamp(this.happiness - hrs * 2,   0, 100);
     this.health    = clamp(this.health    - hrs * 0.5, 0, 100);
 
+    this.peakMoney = Math.max(this.peakMoney || 0, this.money);  // 渐进解锁
     this.day = 1 + Math.floor(this.totalEarned / 500000);
 
     // 自然晋升（慢，需要工作表现 > 70）
-    const naturalThresholds = [30, 90, 180, 365]; // 各职级所需天数
+    const naturalThresholds = [30, 90, 180, 365]; // 各职级所需 day（day 由累计收入推进）
     const nextLevel = this.careerLevel + 1;
     if (nextLevel <= 4 && naturalThresholds[this.careerLevel] &&
-        this.day >= naturalThresholds[this.careerLevel] && this.work > 70) {
+        this.day >= naturalThresholds[this.careerLevel]) {
       this.careerLevel = nextLevel;
     }
 
@@ -171,6 +175,8 @@ class Player {
 
   // ── 购买 ─────────────────────────────────────────────────────
   canAfford(cost) { return this.money >= cost; }
+  // 渐进解锁：历史最高余额达到售价的 REVEAL_RATIO 即显示（之后不再隐藏）
+  isRevealed(cost) { return (this.peakMoney || 0) >= cost * REVEAL_RATIO; }
 
   buyInvestment(type) {
     const inv = INVESTMENTS[type];
@@ -298,6 +304,7 @@ class Player {
     if (d.market?.btc && !d.btcMarket) p.btcMarket = d.market.btc;
     if (!p.btcMarket) p.btcMarket = 1.0;
     delete p.market;
+    p.peakMoney = Math.max(p.peakMoney || 0, p.money || 0);  // 渐进解锁基准
     p.lastTick = Date.now();
     return p;
   }
@@ -383,11 +390,11 @@ const AUTO_STAFF = [
 
 // ── 生活消费定义 ─────────────────────────────────────────────
 const SHOP_ITEMS = [
-  { id: 'rest', label: '回家休息', label_ja: '家で休む', label_en: 'Rest at home', emoji: '🛋️', cost: 0, cooldown: 3_600_000, changes: { energy: 25, health: 5 },
-    desc: '体力+25，健康+5', desc_ja: '体力+25 健康+5', desc_en: 'Energy+25 Health+5',
-    reply:    '你换上睡衣躺下来。最好的几分钟。',
-    reply_ja: 'パジャマに着替えて横になる。最高の数分間。',
-    reply_en: 'You change into pajamas and lie down. The best few minutes.', tone: 'good' },
+  { id: 'rest', label: '工位趴一会', label_ja: '仮眠（デスク）', label_en: 'Desk nap', emoji: '😴', cost: 0, cooldown: 1_800_000, changes: { energy: 12 },
+    desc: '体力+12', desc_ja: '体力+12', desc_en: 'Energy+12',
+    reply:    '你趴在键盘上眯了十分钟。醒来时，脸上印着 Enter 键。',
+    reply_ja: 'キーボードに突っ伏して十分の仮眠。起きたら頬にEnterキーの跡。',
+    reply_en: 'Ten minutes face-down on the keyboard. You wake with an Enter key printed on your cheek.', tone: 'neutral' },
   { id: 'conbini', label: '便利店', label_ja: 'コンビニ', label_en: 'Convenience store', emoji: '🏪', cost: 350, cooldown: 1_800_000, changes: { energy: 10, happiness: 5 },
     desc: '体力+10，快乐+5', desc_ja: '体力+10 幸福+5', desc_en: 'Energy+10 Mood+5',
     reply:    '饭团还是饭团。"ありがとうございます"，今天听到最清晰的一句话。',
@@ -408,6 +415,11 @@ const SHOP_ITEMS = [
     reply:    '哑铃的重量是世界语言，不需要日语。',
     reply_ja: 'ダンベルの重さは世界共通言語。日本語はいらない。',
     reply_en: 'The weight of a dumbbell is a universal language. No Japanese needed.', tone: 'good' },
+  { id: 'gohome', label: '回家睡一觉', label_ja: '家でぐっすり', label_en: 'Sleep at home', emoji: '🛏️', cost: 2500, cooldown: 28_800_000, changes: { energy: 35, health: 10 },
+    desc: '体力+35，健康+10', desc_ja: '体力+35 健康+10', desc_en: 'Energy+35 Health+10',
+    reply:    '你赶上了末班车，久违地躺在自己的床上。明天还要上班，但今晚是你的。',
+    reply_ja: '終電に間に合った。久しぶりに自分のベッドで眠る。明日も仕事。でも今夜は自分のものだ。',
+    reply_en: 'You catch the last train and lie in your own bed for once. Work again tomorrow — but tonight is yours.', tone: 'good' },
   { id: 'fujoku', label: '风俗店', label_ja: '風俗店', label_en: 'Nightlife', emoji: '🏩', cost: 12000, cooldown: 0, changes: { happiness: 40, health: -3 },
     desc: '快乐+40，健康-3', desc_ja: '幸福+40 健康-3', desc_en: 'Mood+40 Health-3',
     reply: null, tone: 'neutral' },
