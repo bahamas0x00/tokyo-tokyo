@@ -205,14 +205,10 @@ const Game = (() => {
   function startLoop() {
     // tick every second
     setInterval(() => {
-      const { autoClicks, sickStarted, promoted } = player.tick() || {};
+      const { autoClicks, sickStarted, reviewDue } = player.tick() || {};
       if (autoClicks > 0) UI.spawnAutoFloat(player.clickValue, autoClicks);
       if (sickStarted) { UI.appendLog(t('log.sick'), 'bad'); UI.toast(t('toast.sick'), 2600); }
-      if (promoted != null) {
-        UI.appendLog(t('log.promoted', { title: player.title }), 'good');
-        UI.toast(t('toast.promoted', { title: player.title }), 3200);
-        if (promoted === 2) UI.appendLog(t('log.kohai_unlocked'), 'good');  // 主任解锁招募
-      }
+      if (reviewDue != null) triggerReview(reviewDue);
       UI.updateStats(player);
       renderShops();
       checkEvent();
@@ -504,6 +500,31 @@ const Game = (() => {
         eventActive = false;
       });
     }
+  }
+
+  // ── 人事考课（年功序列晋升）──────────────────────────────
+  let reviewShowing = false;
+  function triggerReview(level) {
+    if (eventActive || reviewShowing) return;  // 忙/已在显示则跳过，下个 tick 再来
+    reviewShowing = true;
+    eventActive   = true;
+    UI.showEventPopup({
+      text: t('review.text'),
+      choices: [
+        { label: t('review.c1'), reply: t('review.c1r'), tone: 'good',    changes: { happiness: 5 } },
+        { label: t('review.c2'), reply: t('review.c2r'), tone: 'neutral', changes: { happiness: -3 } },
+      ],
+    }, choice => {
+      player.careerLevel = level;          // 确认晋升
+      player.modify(choice.changes || {});
+      UI.appendLog(t('log.promoted', { title: player.title }), 'good');
+      if (level === 2) UI.appendLog(t('log.kohai_unlocked'), 'good');
+      UI.updateStats(player);
+      renderShops();
+      save();
+      eventActive   = false;
+      reviewShowing = false;
+    });
   }
 
   // ── save ─────────────────────────────────────────────────

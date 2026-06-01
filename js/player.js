@@ -1,11 +1,14 @@
 'use strict';
 
 const REVEAL_RATIO = 0.7;  // 余额达到售价的 70% 时，道具出现在商店里
+const DAY_SECONDS  = 20;             // 真实秒数 / 1 在职天（年功序列推进速度，可调）
+const PROMO_DAYS   = [15, 45, 110, 220];  // 各级晋升所需在职天数（→平社員/主任/係長/課長）
 
 class Player {
   constructor(name) {
     this.name      = name;
     this.day       = 1;
+    this.tenureSec = 0;           // 累计在职时长（秒）→ day（年功序列，与收入脱钩）
     this.energy    = 100;         // 新角色满状态
     this.health    = 100;
     this.happiness = 100;
@@ -166,7 +169,9 @@ class Player {
     this.health    = clamp(this.health    - hrs * 0.5 * dm.health, 0, 100);
 
     this.peakMoney = Math.max(this.peakMoney || 0, this.money);  // 渐进解锁
-    this.day = 1 + Math.floor(this.totalEarned / 500000);
+    // DAY = 在职天数（年功序列）：随真实在职时长推进，与收入脱钩
+    this.tenureSec = (this.tenureSec || 0) + secs;
+    this.day = 1 + Math.floor(this.tenureSec / DAY_SECONDS);
 
     // 历史最低值（生活消费「按需求」解锁用，单调不增）
     this.minEnergy    = Math.min(this.minEnergy    ?? this.energy,    this.energy);
@@ -183,17 +188,13 @@ class Player {
       }
     }
 
-    // 自然晋升（按 day 阈值）
-    const naturalThresholds = [30, 90, 180, 365];
+    // 年功序列：在职天数到阈值 → 该触发人事考课（由 game.js 弹窗确认晋升）
+    // 不在此直接升级；reviewDue 每 tick 都会返回直到 careerLevel 真正提升（game.js 去重）
     const nextLevel = this.careerLevel + 1;
-    let promoted = null;
-    if (nextLevel <= 4 && naturalThresholds[this.careerLevel] &&
-        this.day >= naturalThresholds[this.careerLevel]) {
-      this.careerLevel = nextLevel;
-      promoted = nextLevel;
-    }
+    const reviewDue = (nextLevel <= 4 && PROMO_DAYS[this.careerLevel] &&
+                       this.day >= PROMO_DAYS[this.careerLevel]) ? nextLevel : null;
 
-    return { autoClicks, sickStarted, promoted };
+    return { autoClicks, sickStarted, reviewDue };
   }
 
   // ── 点击 ─────────────────────────────────────────────────────
@@ -358,6 +359,7 @@ class Player {
     if (p.minHealth    == null) p.minHealth    = p.health;
     if (p.minHappiness == null) p.minHappiness = p.happiness;
     if (p.crisisShown  == null) p.crisisShown  = false;
+    if (p.tenureSec    == null) p.tenureSec    = 0;   // 旧档：从 0 开始累在职时长
     p.lastTick = Date.now();
     return p;
   }
