@@ -9,6 +9,11 @@ class Player {
     this.energy    = 80;
     this.health    = 85;
     this.happiness = 60;
+    this.sickUntil = 0;           // 病倒结束时间戳（>now = 正在强制休息）
+    this.minEnergy    = 80;       // 历史最低值（生活消费「按需求」解锁用，单调不增）
+    this.minHealth    = 85;
+    this.minHappiness = 60;
+    this.crisisShown  = false;    // 离职危机是否已弹（快乐回升后重置）
     this.money     = 0;           // 当前余额
     this.totalEarned = 0;         // 累计赚过的钱
     this.peakMoney = 0;           // 历史最高余额（渐进解锁用，单调不减）
@@ -65,13 +70,19 @@ class Player {
   }
   get canApplyForKohai() { return this.careerLevel >= 2; } // 主任以上
 
-  // ── 点击收益（受体力影响）────────────────────────────────────
+  // ── 心情士气倍率（影响一切「工作」收益：点击 + 自动点击）──
+  get moodFactor() {
+    const h = this.happiness;
+    return h > 70 ? 1.1 : h > 40 ? 1.0 : h > 20 ? 0.85 : 0.7;
+  }
+  get isSick() { return Date.now() < (this.sickUntil || 0); }
+
+  // ── 点击收益（受体力 + 心情影响）────────────────────────────
   get clickValue() {
     const base = this.baseClickValue + this.upgradeBonus;
-    const energyMult = this.energy > 60 ? 1.0
-                     : this.energy > 30 ? 0.7
-                     : 0.4;
-    return Math.floor(base * energyMult);
+    const e = this.energy;
+    const energyMult = e > 60 ? 1.0 : e > 40 ? 0.8 : e > 20 ? 0.5 : 0.25;
+    return Math.floor(base * energyMult * this.moodFactor);
   }
 
   get upgradeBonus() {
@@ -128,19 +139,22 @@ class Player {
       this.totalEarned += passiveEarned;
     }
 
-    // 自动点击累积（後輩 + AI）
-    this.autoClickAccum = (this.autoClickAccum || 0) + this.autoClickPerSec * secs;
+    // 自动点击累积（後輩 + AI）—— 病倒时暂停工作产出
+    const sick = this.isSick;
     let autoClicks = 0;
-    while (this.autoClickAccum >= 1) {
-      this.autoClickAccum -= 1;
-      const earned = this.clickValue;
-      this.money       += earned;
-      this.totalEarned += earned;
-      // 統計後輩貢獻（後輩速率占比）
-      const kohaiRate = (this.autoStaff?.kohai || 0) * 0.1;
-      const totalRate = this.autoClickPerSec || 1;
-      this.kohaiEarned = (this.kohaiEarned || 0) + earned * (kohaiRate / totalRate);
-      autoClicks++;
+    if (!sick) {
+      this.autoClickAccum = (this.autoClickAccum || 0) + this.autoClickPerSec * secs;
+      while (this.autoClickAccum >= 1) {
+        this.autoClickAccum -= 1;
+        const earned = this.clickValue;
+        this.money       += earned;
+        this.totalEarned += earned;
+        // 統計後輩貢獻（後輩速率占比）
+        const kohaiRate = (this.autoStaff?.kohai || 0) * 0.1;
+        const totalRate = this.autoClickPerSec || 1;
+        this.kohaiEarned = (this.kohaiEarned || 0) + earned * (kohaiRate / totalRate);
+        autoClicks++;
+      }
     }
 
     // 状态缓慢衰减（每小时）
@@ -152,15 +166,30 @@ class Player {
     this.peakMoney = Math.max(this.peakMoney || 0, this.money);  // 渐进解锁
     this.day = 1 + Math.floor(this.totalEarned / 500000);
 
-    // 自然晋升（慢，需要工作表现 > 70）
-    const naturalThresholds = [30, 90, 180, 365]; // 各职级所需 day（day 由累计收入推进）
+    // 历史最低值（生活消费「按需求」解锁用，单调不增）
+    this.minEnergy    = Math.min(this.minEnergy    ?? this.energy,    this.energy);
+    this.minHealth    = Math.min(this.minHealth    ?? this.health,    this.health);
+    this.minHappiness = Math.min(this.minHappiness ?? this.happiness, this.happiness);
+
+    // 病倒：健康 < 15 时按概率触发强制休息（5–10 分钟）
+    let sickStarted = false;
+    if (!sick && this.health < 15) {
+      const prob = 1 - Math.pow(1 - 0.012, secs); // ≈1.2%/秒，已折算离线时长
+      if (Math.random() < prob) {
+        this.sickUntil = now + (5 + Math.random() * 5) * 60000;
+        sickStarted = true;
+      }
+    }
+
+    // 自然晋升（按 day 阈值）
+    const naturalThresholds = [30, 90, 180, 365];
     const nextLevel = this.careerLevel + 1;
     if (nextLevel <= 4 && naturalThresholds[this.careerLevel] &&
         this.day >= naturalThresholds[this.careerLevel]) {
       this.careerLevel = nextLevel;
     }
 
-    return { autoClicks };
+    return { autoClicks, sickStarted };
   }
 
   // ── 点击 ─────────────────────────────────────────────────────
@@ -310,6 +339,12 @@ class Player {
     if (!p.btcMarket) p.btcMarket = 1.0;
     delete p.market;
     p.peakMoney = Math.max(p.peakMoney || 0, p.money || 0);  // 渐进解锁基准
+    // 属性系统新字段（旧档兼容）
+    if (p.sickUntil    == null) p.sickUntil    = 0;
+    if (p.minEnergy    == null) p.minEnergy    = p.energy;
+    if (p.minHealth    == null) p.minHealth    = p.health;
+    if (p.minHappiness == null) p.minHappiness = p.happiness;
+    if (p.crisisShown  == null) p.crisisShown  = false;
     p.lastTick = Date.now();
     return p;
   }
@@ -405,27 +440,27 @@ const SHOP_ITEMS = [
     reply:    '饭团还是饭团。"ありがとうございます"，今天听到最清晰的一句话。',
     reply_ja: 'おにぎり、またおにぎり。「ありがとうございます」、今日いちばんはっきり聞こえた言葉。',
     reply_en: 'Onigiri, again. "Arigatou gozaimasu" — the clearest words you heard all day.', tone: 'neutral' },
-  { id: 'ramen', label: '拉面', label_ja: 'ラーメン', label_en: 'Ramen', emoji: '🍜', cost: 950, cooldown: 7_200_000, changes: { energy: 25, happiness: 18 },
+  { id: 'ramen', label: '拉面', label_ja: 'ラーメン', label_en: 'Ramen', emoji: '🍜', cost: 950, cooldown: 7_200_000, changes: { energy: 25, happiness: 18 }, unlockNeed: { stat: 'energy', below: 40 },
     desc: '体力+25，快乐+18', desc_ja: '体力+25 幸福+18', desc_en: 'Energy+25 Mood+18',
     reply:    '豚骨拉面。你对着白烟发了很久的呆。没有人跟你说话。没关系。',
     reply_ja: '豚骨ラーメン。湯気をぼんやり眺める。誰も話しかけてこない。それでいい。',
     reply_en: 'Tonkotsu ramen. You stare into the steam. Nobody talks to you. That\'s fine.', tone: 'good' },
-  { id: 'izakaya', label: '居酒屋', label_ja: '居酒屋', label_en: 'Izakaya', emoji: '🍺', cost: 3000, cooldown: 14_400_000, changes: { energy: -8, happiness: 30 },
+  { id: 'izakaya', label: '居酒屋', label_ja: '居酒屋', label_en: 'Izakaya', emoji: '🍺', cost: 3000, cooldown: 14_400_000, changes: { energy: -8, happiness: 30 }, unlockNeed: { stat: 'happiness', below: 50 },
     desc: '快乐+30，体力-8', desc_ja: '幸福+30 体力-8', desc_en: 'Mood+30 Energy-8',
     reply:    '生啤，枝豆。你听不懂旁边桌在说什么，但热闹的声音已经够了。',
     reply_ja: '生ビール、枝豆。隣の席の会話は分からないけど、賑やかな音だけで十分。',
     reply_en: 'Draft beer, edamame. You can\'t follow the next table, but the lively noise is enough.', tone: 'good' },
-  { id: 'gym', label: '健身房', label_ja: 'ジム', label_en: 'Gym', emoji: '💪', cost: 1000, cooldown: 86_400_000, changes: { health: 20, energy: -10 },
+  { id: 'gym', label: '健身房', label_ja: 'ジム', label_en: 'Gym', emoji: '💪', cost: 1000, cooldown: 86_400_000, changes: { health: 20, energy: -10 }, unlockNeed: { stat: 'health', below: 60 },
     desc: '健康+20，体力-10', desc_ja: '健康+20 体力-10', desc_en: 'Health+20 Energy-10',
     reply:    '哑铃的重量是世界语言，不需要日语。',
     reply_ja: 'ダンベルの重さは世界共通言語。日本語はいらない。',
     reply_en: 'The weight of a dumbbell is a universal language. No Japanese needed.', tone: 'good' },
-  { id: 'gohome', label: '回家睡一觉', label_ja: '家でぐっすり', label_en: 'Sleep at home', emoji: '🛏️', cost: 2500, cooldown: 28_800_000, changes: { energy: 35, health: 10 },
+  { id: 'gohome', label: '回家睡一觉', label_ja: '家でぐっすり', label_en: 'Sleep at home', emoji: '🛏️', cost: 2500, cooldown: 28_800_000, changes: { energy: 35, health: 10 }, unlockNeed: { stat: 'energy', below: 35 },
     desc: '体力+35，健康+10', desc_ja: '体力+35 健康+10', desc_en: 'Energy+35 Health+10',
     reply:    '你赶上了末班车，久违地躺在自己的床上。明天还要上班，但今晚是你的。',
     reply_ja: '終電に間に合った。久しぶりに自分のベッドで眠る。明日も仕事。でも今夜は自分のものだ。',
     reply_en: 'You catch the last train and lie in your own bed for once. Work again tomorrow — but tonight is yours.', tone: 'good' },
-  { id: 'fujoku', label: '风俗店', label_ja: '風俗店', label_en: 'Nightlife', emoji: '🏩', cost: 12000, cooldown: 0, changes: { happiness: 40, health: -3 },
+  { id: 'fujoku', label: '风俗店', label_ja: '風俗店', label_en: 'Nightlife', emoji: '🏩', cost: 12000, cooldown: 0, changes: { happiness: 40, health: -3 }, unlockNeed: { stat: 'happiness', below: 30 },
     desc: '快乐+40，健康-3', desc_ja: '幸福+40 健康-3', desc_en: 'Mood+40 Health-3',
     reply: null, tone: 'neutral' },
 ];

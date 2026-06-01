@@ -123,12 +123,14 @@ const Game = (() => {
   function startLoop() {
     // tick every second
     setInterval(() => {
-      const { autoClicks } = player.tick() || {};
+      const { autoClicks, sickStarted } = player.tick() || {};
       if (autoClicks > 0) UI.spawnAutoFloat(player.clickValue, autoClicks);
+      if (sickStarted) { UI.appendLog(t('log.sick'), 'bad'); UI.toast(t('toast.sick'), 2600); }
       UI.updateStats(player);
       renderShops();
       checkEvent();
       checkMarketEvent();
+      checkCrisis();
     }, 1000);
 
     // auto-save every 60s
@@ -140,7 +142,8 @@ const Game = (() => {
 
   // ── click ─────────────────────────────────────────────────
   function handleClick() {
-    if (player.energy < 1) { UI.toast(t('toast.energy_low')); return; }
+    if (player.isSick)      { UI.toast(t('toast.sick_resting')); return; }
+    if (player.energy < 1)  { UI.toast(t('toast.energy_low')); return; }
     const earned = player.click();
     UI.spawnFloat(earned);
     // 打字动画
@@ -353,6 +356,35 @@ const Game = (() => {
       renderShops();
       save();
     }, HR_WAIT_MS);
+  }
+
+  // ── 离职危机（快乐 ≤5 触发，回升 >20 后可再次触发）──────────
+  function checkCrisis() {
+    if (eventActive) return;
+    if (player.happiness > 20) { player.crisisShown = false; return; }
+    if (player.happiness <= 5 && !player.crisisShown) {
+      player.crisisShown = true;
+      eventActive = true;
+      UI.showEventPopup({
+        text: t('crisis.text'),
+        choices: [
+          { label: t('crisis.tough'), reply: t('crisis.tough.reply'), tone: 'bad',     _crisis: 'tough' },
+          { label: t('crisis.leave'), reply: t('crisis.leave.reply'), tone: 'neutral', _crisis: 'leave' },
+        ],
+      }, choice => {
+        if (choice._crisis === 'tough') {
+          player.happiness = Math.max(player.happiness, 20);
+          player.health    = clamp(player.health - 15, 0, 100);
+        } else {
+          player.happiness = clamp(player.happiness + 30, 0, 100);
+          player.sickUntil = Date.now() + 3 * 60000; // 请假 3 分钟停工
+        }
+        UI.updateStats(player);
+        renderShops();
+        save();
+        eventActive = false;
+      });
+    }
   }
 
   // ── save ─────────────────────────────────────────────────

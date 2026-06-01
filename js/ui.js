@@ -27,6 +27,13 @@ const UI = (() => {
     setText('val-energy',    Math.floor(p.energy));
     setText('val-health',    Math.floor(p.health));
     setText('val-happiness', Math.floor(p.happiness));
+    // 低值预警 + 病倒视觉
+    ['energy', 'health', 'happiness'].forEach(k => {
+      const bar = document.getElementById('bar-' + k);
+      if (bar) bar.classList.toggle('low', p[k] < 25);
+    });
+    const office = document.getElementById('btn-click');
+    if (office) office.classList.toggle('sick', p.isSick);
     updateConfig(p);
     updatePortfolio(p, window._onSellCallback);
     updateTeamPanel(p);
@@ -381,8 +388,14 @@ const UI = (() => {
   function renderLifeShop(p, onBuy) {
     const el = document.getElementById('life-shop');
     if (!el) return;
-    // 渐进解锁：余额接近售价才显示（免费/便宜项很早就出现）
-    const items = SHOP_ITEMS.filter(item => p.isRevealed(item.cost));
+    // 按需求解锁：无 unlockNeed 的(趴一会/便利店)始终显示；
+    // 有的当对应属性「曾跌破阈值」后永久出现（用历史最低值 minXxx，单调不增）
+    const items = SHOP_ITEMS.filter(item => {
+      if (!item.unlockNeed) return true;
+      const n = item.unlockNeed;
+      const minVal = p['min' + n.stat[0].toUpperCase() + n.stat.slice(1)];
+      return (minVal ?? p[n.stat] ?? 100) <= n.below;
+    });
     el.closest('.panel-section').style.display = items.length ? '' : 'none';
     el.innerHTML = items.map(item => {
       const canAfford = p.money >= item.cost;
