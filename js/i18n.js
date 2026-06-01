@@ -40,6 +40,7 @@ const I18N = {
     'btn.title':         '[ 主页 ]',
     'music.on':          '🎵 音乐 开',
     'music.off':         '🎵 音乐 关',
+    'music.disliked':    '👎 已拉黑这个电台，切走',
 
     // center panel
     'team.title':        '团队（被压榨成员）',
@@ -219,6 +220,7 @@ const I18N = {
     'btn.title':         '[ Menu ]',
     'music.on':          '🎵 Music On',
     'music.off':         '🎵 Music Off',
+    'music.disliked':    '👎 Station blocked — switching',
 
     // center panel
     'team.title':        'Team (The Exploited)',
@@ -398,6 +400,7 @@ const I18N = {
     'btn.title':         '[ タイトル ]',
     'music.on':          '🎵 BGM オン',
     'music.off':         '🎵 BGM オフ',
+    'music.disliked':    '👎 この局をブロック、切替',
 
     // center panel
     'team.title':        'チーム（搾取される側）',

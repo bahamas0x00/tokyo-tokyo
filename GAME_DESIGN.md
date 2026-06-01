@@ -184,9 +184,9 @@
 - **重度像素粗犷风**：硬偏移阴影、实色块、像素虚线分隔、CRT 扫描线 + 棋盘抖动纹理、`steps()` 顿挫动画；不用柔光/模糊/渐变。
 - 配色变量在 `style.css` `:root`；标题/语言页与主界面的风格块在 `style.css` 末尾两段（带「重度像素粗犷风」注释）。
 
-- **背景音乐**：lofi 在线流（SomaFM，`index.html` 的 `<audio id="bgm">`），左栏 🎵 按钮开关，记住偏好（`localStorage.tokyo_bgm`），首次点击后才播（浏览器自动播放限制）。换曲改 `<source src>`。
+- **背景音乐**：SomaFM 在线流（柔和优先：Groove Salad / Drone Zone …，鼓点重的 Fluid 最后）。左栏控制条：🔇开关 / ⏭切换电台 / 👎不喜欢(拉黑当前电台并切走)。开关、当前电台、黑名单都持久化（`localStorage.tokyo_bgm / tokyo_bgm_station / tokyo_bgm_dislike`）；首次点击后才播（浏览器自动播放限制）。电台列表 = `js/game.js` 的 `BGM_STATIONS`。
 
-📍去哪改：`style.css`；音乐在 `index.html` `<audio>` + `js/game.js` `bindMusic`。
+📍去哪改：`style.css`（控制条样式）；音乐在 `index.html` `<audio>` + `js/game.js` `BGM_STATIONS` / `bindMusic`。
 
 ---
 

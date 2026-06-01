@@ -641,6 +641,18 @@ html, body { height: 100%; overflow: hidden; background: var(--bg); color: var(-
 /* 新建角色页：硬偏移阴影 */
 .create-box { box-shadow: 8px 8px 0 #7a4000; }
 
+/* —— 音乐控制条 —— */
+.music-bar { display: flex; align-items: center; gap: 4px; margin-top: 4px; }
+.music-btn {
+  background: var(--bg3); border: 2px solid var(--cyan); color: var(--cyan);
+  font-size: 13px; padding: 4px 6px; cursor: pointer; line-height: 1; transition: all .1s;
+}
+.music-btn:hover { background: var(--cyan); color: var(--bg); }
+.music-name {
+  font-family: var(--font-dot); font-size: 10px; color: var(--dim);
+  flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+
 /* —— 属性低值预警 + 病倒 —— */
 .stat-bar.low { background: var(--pink) !important; animation: blink .8s steps(2) infinite; }
 .pixel-office.sick { filter: grayscale(.7) brightness(.6); cursor: not-allowed; }

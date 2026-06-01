@@ -120,21 +120,69 @@ const Game = (() => {
     bindMusic();
   }
 
-  // ── lofi 背景音乐 ─────────────────────────────────────────
+  // ── lofi 背景音乐（多电台 · 切换 · 不喜欢拉黑）─────────────
+  // 柔和优先；鼓点重的 Fluid 放最后。换源改这里即可。
+  const BGM_STATIONS = [
+    { id: 'groovesalad',  name: 'Groove Salad · chill' },
+    { id: 'dronezone',    name: 'Drone Zone · ambient' },
+    { id: 'gsclassic',    name: 'Groove Salad Classic' },
+    { id: 'deepspaceone', name: 'Deep Space One · 深空' },
+    { id: 'fluid',        name: 'Fluid · lofi beats' },
+  ];
+  const bgmUrl = id => `https://ice1.somafm.com/${id}-128-mp3`;
+
   function bindMusic() {
     const bgm = document.getElementById('bgm');
     const btn = document.getElementById('btn-music');
     if (!bgm || !btn || btn.dataset.bound) return;
     btn.dataset.bound = '1';
-    bgm.volume = 0.35;
+    const btnNext = document.getElementById('btn-music-next');
+    const btnDis  = document.getElementById('btn-music-dislike');
+    const nameEl  = document.getElementById('music-name');
+    bgm.volume = 0.3;
+
     let on = localStorage.getItem('tokyo_bgm') === 'on';
-    const refresh = () => { btn.textContent = t(on ? 'music.on' : 'music.off'); };
-    const apply = () => {
-      localStorage.setItem('tokyo_bgm', on ? 'on' : 'off');
-      if (on) bgm.play().catch(() => {}); else bgm.pause();
+    const disliked = new Set((localStorage.getItem('tokyo_bgm_dislike') || '').split(',').filter(Boolean));
+    let stationId = localStorage.getItem('tokyo_bgm_station') || BGM_STATIONS[0].id;
+
+    const avail = () => BGM_STATIONS.filter(s => !disliked.has(s.id));
+    const cur   = () => BGM_STATIONS.find(s => s.id === stationId) || BGM_STATIONS[0];
+    const refresh = () => { btn.textContent = on ? '🎵' : '🔇'; if (nameEl) nameEl.textContent = cur().name; };
+
+    function load(play) {
+      bgm.src = bgmUrl(stationId);
+      localStorage.setItem('tokyo_bgm_station', stationId);
+      if (on && play) bgm.play().catch(() => {});
       refresh();
-    };
-    btn.addEventListener('click', () => { on = !on; apply(); });
+    }
+    function setOn(v) {
+      on = v; localStorage.setItem('tokyo_bgm', on ? 'on' : 'off');
+      if (on) { if (!bgm.src) bgm.src = bgmUrl(stationId); bgm.play().catch(() => {}); }
+      else bgm.pause();
+      refresh();
+    }
+    function next() {
+      const list = avail(); if (!list.length) return;
+      const i = list.findIndex(s => s.id === stationId);
+      stationId = list[(i + 1 + list.length) % list.length].id;
+      load(true);
+    }
+    function dislike() {
+      disliked.add(stationId);
+      if (disliked.size >= BGM_STATIONS.length) disliked.clear(); // 全黑名单则重置
+      localStorage.setItem('tokyo_bgm_dislike', [...disliked].join(','));
+      const list = avail();
+      const i = list.findIndex(s => s.id === stationId);
+      stationId = list[i >= 0 ? (i + 1) % list.length : 0].id;
+      load(true);
+      UI.toast(t('music.disliked'), 1500);
+    }
+
+    btn.addEventListener('click', () => setOn(!on));
+    if (btnNext) btnNext.addEventListener('click', next);
+    if (btnDis)  btnDis.addEventListener('click', dislike);
+
+    bgm.src = bgmUrl(stationId);
     refresh();
     // 浏览器禁止无交互自动播放：若上次开着，首次任意点击后恢复
     if (on) {
