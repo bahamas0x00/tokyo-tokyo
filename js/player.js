@@ -159,9 +159,10 @@ class Player {
 
     // 状态缓慢衰减（每小时）
     const hrs = secs / 3600;
-    this.energy    = clamp(this.energy    - hrs * 3,   0, 100);
-    this.happiness = clamp(this.happiness - hrs * 2,   0, 100);
-    this.health    = clamp(this.health    - hrs * 0.5, 0, 100);
+    const dm  = this.decayMod;  // 设备减缓衰减
+    this.energy    = clamp(this.energy    - hrs * 3   * dm.energy, 0, 100);
+    this.happiness = clamp(this.happiness - hrs * 2,              0, 100);
+    this.health    = clamp(this.health    - hrs * 0.5 * dm.health, 0, 100);
 
     this.peakMoney = Math.max(this.peakMoney || 0, this.money);  // 渐进解锁
     this.day = 1 + Math.floor(this.totalEarned / 500000);
@@ -210,6 +211,15 @@ class Player {
   get gearComplete() {
     const t = this.tierLevels || {};
     return (t.keyboard >= 1) && (t.monitor >= 1) && (t.chair >= 1) && (t.ai >= 1);
+  }
+  // 设备 statBonus = 减缓相关属性衰减（好装备 = 可持续地肝）
+  get decayMod() {
+    const t = this.tierLevels || {};
+    let energy = 1, health = 1;
+    if (t.keyboard >= 1) energy *= 0.90;             // 人体工学键盘：体力衰减 −10%
+    if (t.chair    >= 1) { energy *= 0.85; health *= 0.95; } // 人体工学椅：体力 −15% / 健康 −5%
+    if (t.monitor  >= 1) health *= 0.85;             // 带鱼屏护眼：健康衰减 −15%
+    return { energy, health };
   }
 
   buyInvestment(type) {
