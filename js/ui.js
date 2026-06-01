@@ -130,17 +130,18 @@ const UI = (() => {
         <span class="neon-cyan" style="font-size:11px">${tf(tier, 'label')}</span>
       </div>`;
     }).join('');
-    // 後輩团队（有了才显示）
-    const kohaiCount = p.autoStaff?.kohai || 0;
-    if (kohaiCount > 0) {
-      html += `<div class="config-row">
-        <span>${AUTO_STAFF[0].emoji}</span>
-        <span class="neon-cyan" style="font-size:11px">${tf(AUTO_STAFF[0], 'label')} ×${kohaiCount}</span>
+    // 自动产出（自动脚本/後輩，有了才显示）
+    AUTO_STAFF.forEach(s => {
+      const c = p.autoStaff?.[s.id] || 0;
+      if (c > 0) html += `<div class="config-row">
+        <span>${s.emoji}</span>
+        <span class="neon-cyan" style="font-size:11px">${tf(s, 'label')} ×${c}</span>
       </div>`;
-    }
+    });
     el.innerHTML = html;
-    // 开局未拥有任何设备/AI/後輩时整栏隐藏，有了才出现
-    const owns = ['keyboard', 'monitor', 'chair', 'ai'].some(k => (levels[k] || 0) >= 1) || kohaiCount > 0;
+    // 开局未拥有任何设备/AI/自动产出时整栏隐藏，有了才出现
+    const ownsStaff = AUTO_STAFF.some(s => (p.autoStaff?.[s.id] || 0) > 0);
+    const owns = ['keyboard', 'monitor', 'chair', 'ai'].some(k => (levels[k] || 0) >= 1) || ownsStaff;
     el.closest('.panel-section').style.display = owns ? '' : 'none';
   }
 
@@ -382,31 +383,33 @@ const UI = (() => {
       </div>`;
     }).join('');
 
-    // 後輩(kohai)：晋升到主任后并入本栏（直接购买，价格递增 ×1.15）
-    let kohaiHtml = '';
-    if (p.canApplyForKohai) {
-      const def    = AUTO_STAFF[0];
-      const count  = p.autoStaff?.kohai || 0;
-      const price  = p.autoStaffPrice('kohai');
+    // 自动产出（叠加购买、价格 ×1.15）：自动脚本(早) / 後輩(主任后)
+    const staffCard = (id, shown) => {
+      const def = AUTO_STAFF.find(s => s.id === id);
+      if (!def || !shown) return '';
+      const count  = p.autoStaff?.[id] || 0;
+      const price  = p.autoStaffPrice(id);
       const afford = p.money >= price;
-      kohaiHtml = `<div class="shop-item ${afford ? '' : 'locked'}">
+      return `<div class="shop-item ${afford ? '' : 'locked'}">
         <div class="shop-item-header">
           <span>${def.emoji} ${tf(def, 'label')}</span>
           <span class="shop-count neon-cyan">×${count}</span>
         </div>
         <div class="shop-item-desc">${tf(def, 'desc')}</div>
         <div class="shop-item-footer">
-          <span class="shop-yield neon-green">+0.1 clicks/s</span>
-          <button class="shop-btn ${afford ? '' : 'disabled'}" data-kohai="1">${fmtMoney(price)}</button>
+          <span class="shop-yield neon-green">+${def.clicksPerSec} clicks/s</span>
+          <button class="shop-btn ${afford ? '' : 'disabled'}" data-staff="${id}">${fmtMoney(price)}</button>
         </div>
       </div>`;
-    }
+    };
+    const scriptHtml = staffCard('script', (p.autoStaff?.script || 0) > 0 || p.isRevealed(p.autoStaffPrice('script')));
+    const kohaiHtml  = staffCard('kohai', p.canApplyForKohai);
 
-    el.closest('.panel-section').style.display = (tiersHtml || kohaiHtml) ? '' : 'none';
-    el.innerHTML = tiersHtml + kohaiHtml;
+    el.closest('.panel-section').style.display = (tiersHtml || scriptHtml || kohaiHtml) ? '' : 'none';
+    el.innerHTML = scriptHtml + tiersHtml + kohaiHtml;  // 脚本最前(便宜/早)，後輩最后
 
     el.querySelectorAll('.shop-btn:not(.disabled)').forEach(btn => {
-      if (btn.dataset.kohai) btn.addEventListener('click', () => onBuy('kohai-buy'));
+      if (btn.dataset.staff) btn.addEventListener('click', () => onBuy('staff:' + btn.dataset.staff));
       else btn.addEventListener('click', () => onBuy(btn.dataset.type));
     });
   }

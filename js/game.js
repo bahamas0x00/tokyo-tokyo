@@ -270,10 +270,12 @@ const Game = (() => {
     });
 
     UI.renderUpgradeShop(player, type => {
-      if (type === 'kohai-buy') {
-        if (player.buyAutoStaff('kohai')) {
-          UI.appendLog(t('log.buy', { emoji: AUTO_STAFF[0].emoji, name: tf(AUTO_STAFF[0], 'label') }), 'good');
-          UI.toast(t('toast.buy_ok', { name: tf(AUTO_STAFF[0], 'label') }));
+      if (type.startsWith('staff:')) {
+        const sid = type.slice(6);
+        const def = AUTO_STAFF.find(s => s.id === sid);
+        if (def && player.buyAutoStaff(sid)) {
+          UI.appendLog(t('log.buy', { emoji: def.emoji, name: tf(def, 'label') }), 'good');
+          UI.toast(t('toast.buy_ok', { name: tf(def, 'label') }));
           UI.updateStats(player); renderShops(); save();
         } else {
           UI.toast(t('toast.no_fund'));

@@ -26,7 +26,7 @@ class Player {
     this.tierLevels = { keyboard: 0, monitor: 0, chair: 0, ai: 0 };
 
     // ── 自动化（Cookie Clicker 式，可叠加）──
-    this.autoStaff = { kohai: 0 };   // 後輩人数
+    this.autoStaff = { script: 0, kohai: 0 };   // 自动脚本 / 後輩人数
     this.autoClickAccum  = 0;         // 累积小数点击
     this.kohaiEarned     = 0;         // 後輩累计产出（统计压榨成果）
 
@@ -91,7 +91,8 @@ class Player {
 
   // ── 自动点击速率 clicks/sec ──────────────────────────────────
   get autoClickPerSec() {
-    let rate = (this.autoStaff?.kohai || 0) * 0.1;  // 後輩每人 0.1 clicks/sec
+    let rate = 0;  // 各类自动产出（自动脚本/後輩）按各自 clicksPerSec 累加
+    for (const s of AUTO_STAFF) rate += (this.autoStaff?.[s.id] || 0) * s.clicksPerSec;
     const ai = this.tierLevels?.ai || 0;
     if (ai >= 1) rate += 0.2;   // AI Lv1: +0.2/sec（每5秒1次）
     if (ai >= 2) rate += 0.3;   // AI Lv2: 累计 0.5/sec（每2秒1次）
@@ -150,7 +151,7 @@ class Player {
         this.money       += earned;
         this.totalEarned += earned;
         // 統計後輩貢獻（後輩速率占比）
-        const kohaiRate = (this.autoStaff?.kohai || 0) * 0.1;
+        const kohaiRate = (this.autoStaff?.kohai || 0) * 0.3;  // 与 AUTO_STAFF kohai.clicksPerSec 一致
         const totalRate = this.autoClickPerSec || 1;
         this.kohaiEarned = (this.kohaiEarned || 0) + earned * (kohaiRate / totalRate);
         autoClicks++;
@@ -391,7 +392,7 @@ const INVESTMENTS = {
 //              想好后填入即可，例：椅子 statBonus: { health: 10 }。
 //              若要改成「持续被动」效果，在 Player.tick() 里另行处理。
 const KEYBOARD_TIERS = [
-  { level: 1, label: '人体工学键盘', label_ja: '人間工学キーボード', label_en: 'Ergonomic Keyboard', emoji: '⌨️', bonus: 250, cost: 20000,  statBonus: {},
+  { level: 1, label: '人体工学键盘', label_ja: '人間工学キーボード', label_en: 'Ergonomic Keyboard', emoji: '⌨️', bonus: 250, cost: 10000,  statBonus: {},
     desc:    '手腕不疼了，可以敲更久。一次解锁，永久有效。',
     desc_ja: '手首が痛くない、もっと長く打てる。一度解放、永久有効。',
     desc_en: 'Wrists stop aching, type longer. One-time unlock, permanent.' },
@@ -413,7 +414,7 @@ const CHAIR_TIERS = [
 
 // AI 自动点击（分级，每级加快点击频率）
 const AI_TIERS = [
-  { level: 1, label: '基础AI助手', label_ja: '基本AIアシスト', label_en: 'Basic AI Assist',   emoji: '🤖', autoClickInterval: 5000, cost: 200000,
+  { level: 1, label: '基础AI助手', label_ja: '基本AIアシスト', label_en: 'Basic AI Assist',   emoji: '🤖', autoClickInterval: 5000, cost: 80000,
     desc:    '每5秒自动敲一次代码。你还是需要在的。',
     desc_ja: '5秒ごとに自動でコードを書く。まだ君が必要。',
     desc_en: 'Auto-types code every 5s. Still needs you around.' },
@@ -430,12 +431,21 @@ const AI_TIERS = [
 // ── 自动化员工（可叠加购买）──────────────────────────────────
 const AUTO_STAFF = [
   {
+    id: 'script', label: '自动脚本', label_ja: 'オートスクリプト', label_en: 'Auto-script', emoji: '🖱️',
+    cost: 1000,
+    clicksPerSec: 0.1,   // 廉价早期自动产出（Cookie Clicker Cursor 式）
+    desc:    '你写的挂机脚本，自动敲点代码。便宜，前期就能挂上。',
+    desc_ja: '放置スクリプト。勝手にコードを叩く。安くて序盤から回せる。',
+    desc_en: 'An idle macro that types code for you. Cheap, runs from the start.',
+    costScale: 1.15,
+  },
+  {
     id: 'kohai', label: '后辈工程师', label_ja: '後輩エンジニア', label_en: 'Junior Engineer', emoji: '👨‍💻',
     cost: 30000,
-    clicksPerSec: 0.1,   // 每10秒1次
-    desc:    '刚毕业的后辈，帮你敲一些代码。速度有限，但总比没有强。',
-    desc_ja: '新卒の後輩。コードを少し手伝ってくれる。遅いが、いないよりマシ。',
-    desc_en: 'A fresh-grad junior who writes some code. Slow, but better than nothing.',
+    clicksPerSec: 0.3,   // 升主任后压榨后辈，每个 = 3 个脚本，比买 AI 爽
+    desc:    '刚毕业的后辈，被你安排敲代码。压榨起来比买 AI 爽多了。',
+    desc_ja: '新卒の後輩。コードを書かせる。AIを買うよりずっと爽快だ。',
+    desc_en: 'A fresh-grad junior you put to work. Far more satisfying than buying AI.',
     costScale: 1.15,     // 每多买一个，价格×1.15
   },
 ];
