@@ -87,6 +87,9 @@ const I18N = {
     'upgrade.ai':        'AI助手',
     'upgrade.maxed':     '已满级 ✓',
     'upgrade.owned':     '已解锁 ✓',
+    'effect.keyboard':   '🔋 体力衰减 −10%',
+    'effect.monitor':    '👁 健康衰减 −15%',
+    'effect.chair':      '🔋 体力衰减 −15% · 健康 −5%',
     'upgrade.ai.run':    '▶ 启动运行',
 
     // auto shop
@@ -141,6 +144,9 @@ const I18N = {
     'boss.catch.c2':        '嘴硬：我在闭眼调试',
     'boss.catch.c2r':       '上司冷笑一声，在本子上记了一笔。你得到一次正式警告。',
     'boss.catch.log':       '🫣 趴桌补觉被上司逮到了',
+    'log.promoted':         '🎉 晋升为【{title}】！',
+    'toast.promoted':       '🎉 晋升：{title}',
+    'log.kohai_unlocked':   '👔 你成了小组长——现在可以在【设备升级】里招募後輩了',
     'toast.buy_sell':       '{name} 已卖出 {gain}',
     'toast.buy_ok':         '购入 {name} ✓',
     'toast.no_fund':        '余额不足',
@@ -275,6 +281,9 @@ const I18N = {
     'upgrade.ai':        'AI Assist',
     'upgrade.maxed':     'Maxed ✓',
     'upgrade.owned':     'Unlocked ✓',
+    'effect.keyboard':   '🔋 Energy decay −10%',
+    'effect.monitor':    '👁 Health decay −15%',
+    'effect.chair':      '🔋 Energy decay −15% · Health −5%',
     'upgrade.ai.run':    '▶ Start Run',
 
     // auto shop
@@ -329,6 +338,9 @@ const I18N = {
     'boss.catch.c2':        'Bluff: "I was debugging with my eyes closed"',
     'boss.catch.c2r':       'The boss smirks and writes something down. You get an official warning.',
     'boss.catch.log':       '🫣 Caught napping at your desk by the boss',
+    'log.promoted':         '🎉 Promoted to 【{title}】!',
+    'toast.promoted':       '🎉 Promoted: {title}',
+    'log.kohai_unlocked':   '👔 You\'re a team lead now — recruit kohai in 【Upgrades】',
     'toast.buy_sell':       '{name} sold {gain}',
     'toast.buy_ok':         'Bought {name} ✓',
     'toast.no_fund':        'Insufficient funds',
@@ -463,6 +475,9 @@ const I18N = {
     'upgrade.ai':        'AIアシスト',
     'upgrade.maxed':     '最大強化済 ✓',
     'upgrade.owned':     '解除済 ✓',
+    'effect.keyboard':   '🔋 体力減少 −10%',
+    'effect.monitor':    '👁 健康減少 −15%',
+    'effect.chair':      '🔋 体力 −15% · 健康 −5%',
     'upgrade.ai.run':    '▶ 起動',
 
     // auto shop
@@ -517,6 +532,9 @@ const I18N = {
     'boss.catch.c2':        '強がる：目を閉じてデバッグ中です',
     'boss.catch.c2r':       '上司は鼻で笑い、手帳に何か書き込んだ。正式な警告を1つ受けた。',
     'boss.catch.log':       '🫣 デスクで仮眠中に上司に見つかった',
+    'log.promoted':         '🎉 【{title}】に昇進！',
+    'toast.promoted':       '🎉 昇進：{title}',
+    'log.kohai_unlocked':   '👔 リーダーになった——【設備強化】で後輩を募集できる',
     'toast.buy_sell':       '{name} 売却 {gain}',
     'toast.buy_ok':         '{name} 購入 ✓',
     'toast.no_fund':        '残高不足',

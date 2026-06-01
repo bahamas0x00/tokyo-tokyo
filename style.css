@@ -385,6 +385,7 @@ html, body { height: 100%; overflow: hidden; background: var(--bg); color: var(-
 .shop-item.locked { opacity: .4; }
 .shop-item-header { display: flex; justify-content: space-between; font-size: 15px; font-weight: 700; color: var(--text); align-items: center; }
 .shop-item-desc   { font-size: 13px; color: var(--dim); line-height: 1.6; }
+.shop-effect      { font-family: var(--font-dot); font-size: 11px; color: var(--green); }
 .shop-item-footer { display: flex; align-items: center; gap: 6px; justify-content: space-between; flex-wrap: wrap; }
 .shop-yield { font-family: var(--font-dot); font-size: 11px; }
 .shop-risk  { font-family: var(--font-px); font-size: 8px; }

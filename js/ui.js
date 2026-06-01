@@ -365,6 +365,8 @@ const UI = (() => {
       const nextBonus = next
         ? (def.type === 'ai' ? `${next.autoClickInterval/1000}s/click` : `+¥${next.bonus}/click`)
         : '';
+      const effectKey = { keyboard: 'effect.keyboard', monitor: 'effect.monitor', chair: 'effect.chair' }[def.type];
+      const effect    = (next && effectKey) ? t(effectKey) : '';
 
       return `<div class="shop-item ${disabled ? 'locked' : ''}">
         <div class="shop-item-header">
@@ -372,6 +374,7 @@ const UI = (() => {
           ${statusLabel}
         </div>
         <div class="shop-item-desc">${nextDesc}</div>
+        ${effect ? `<div class="shop-effect neon-green">${effect}</div>` : ''}
         <div class="shop-item-footer">
           ${nextBonus ? `<span class="shop-yield neon-cyan">${nextBonus}</span>` : '<span></span>'}
           <button class="shop-btn ${disabled ? 'disabled' : ''}" data-type="${def.type}">${btnLabel}</button>

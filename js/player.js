@@ -185,12 +185,14 @@ class Player {
     // 自然晋升（按 day 阈值）
     const naturalThresholds = [30, 90, 180, 365];
     const nextLevel = this.careerLevel + 1;
+    let promoted = null;
     if (nextLevel <= 4 && naturalThresholds[this.careerLevel] &&
         this.day >= naturalThresholds[this.careerLevel]) {
       this.careerLevel = nextLevel;
+      promoted = nextLevel;
     }
 
-    return { autoClicks, sickStarted };
+    return { autoClicks, sickStarted, promoted };
   }
 
   // ── 点击 ─────────────────────────────────────────────────────

@@ -205,9 +205,14 @@ const Game = (() => {
   function startLoop() {
     // tick every second
     setInterval(() => {
-      const { autoClicks, sickStarted } = player.tick() || {};
+      const { autoClicks, sickStarted, promoted } = player.tick() || {};
       if (autoClicks > 0) UI.spawnAutoFloat(player.clickValue, autoClicks);
       if (sickStarted) { UI.appendLog(t('log.sick'), 'bad'); UI.toast(t('toast.sick'), 2600); }
+      if (promoted != null) {
+        UI.appendLog(t('log.promoted', { title: player.title }), 'good');
+        UI.toast(t('toast.promoted', { title: player.title }), 3200);
+        if (promoted === 2) UI.appendLog(t('log.kohai_unlocked'), 'good');  // 主任解锁招募
+      }
       UI.updateStats(player);
       renderShops();
       checkEvent();
@@ -277,7 +282,8 @@ const Game = (() => {
       }
       const result = player.buyTierUpgrade(type);
       if (result) {
-        UI.appendLog(t('log.upgrade', { emoji: result.emoji, name: tf(result, 'label') }), 'good');
+        const effK = { keyboard: 'effect.keyboard', monitor: 'effect.monitor', chair: 'effect.chair' }[type];
+        UI.appendLog(t('log.upgrade', { emoji: result.emoji, name: tf(result, 'label') }) + (effK ? `（${t(effK)}）` : ''), 'good');
         UI.toast(`${tf(result, 'label')} ✓`);
         UI.updateStats(player);
         renderShops();
