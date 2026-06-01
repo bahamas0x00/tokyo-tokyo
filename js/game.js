@@ -99,6 +99,7 @@ const Game = (() => {
   // ── enter game ────────────────────────────────────────────
   function enterGame() {
     UI.show('game');
+    UI.updateStats(player);   // 立刻刷新一次，避免数值/状态栏先显示默认值再更新的闪烁
     renderShops();
     startLoop();
     bindGameButtons();
