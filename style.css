@@ -105,8 +105,8 @@ html, body { height: 100%; overflow: hidden; background: var(--bg); color: var(-
   box-shadow: 6px 6px 0 #004080;
 }
 .menu-btn.small {
-  font-size: 9px;
-  padding: 9px 10px;
+  font-size: 13px;
+  padding: 10px 12px;
   min-width: unset;
   width: 100%;
 }
