@@ -177,6 +177,11 @@ class Player {
   canAfford(cost) { return this.money >= cost; }
   // 渐进解锁：历史最高余额达到售价的 REVEAL_RATIO 即显示（之后不再隐藏）
   isRevealed(cost) { return (this.peakMoney || 0) >= cost * REVEAL_RATIO; }
+  // 投资解锁前提：键盘/显示器/椅子全升级 + 已买 AI（引导玩家先升级设备再投资）
+  get gearComplete() {
+    const t = this.tierLevels || {};
+    return (t.keyboard >= 1) && (t.monitor >= 1) && (t.chair >= 1) && (t.ai >= 1);
+  }
 
   buyInvestment(type) {
     const inv = INVESTMENTS[type];

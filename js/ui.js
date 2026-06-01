@@ -288,9 +288,10 @@ const UI = (() => {
       </div>
     </div>`;
 
-    // 渐进解锁：已持有 或 余额接近售价 才显示
-    const bondsShown = bondsQty > 0 || p.isRevealed(bondsInv.price);
-    const btcShown   = btcQty   > 0 || p.isRevealed(btcInv.price);
+    // 解锁前提：设备全升级 + 已买 AI；之后再按余额接近售价逐步显示
+    const gear = p.gearComplete;
+    const bondsShown = bondsQty > 0 || (gear && p.isRevealed(bondsInv.price));
+    const btcShown   = btcQty   > 0 || (gear && p.isRevealed(btcInv.price));
     el.closest('.panel-section').style.display = (bondsShown || btcShown) ? '' : 'none';
     el.innerHTML = (bondsShown ? bondsItem : '') + (btcShown ? btcItem : '');
     el.querySelectorAll('.shop-btn:not(.disabled)').forEach(btn => {
