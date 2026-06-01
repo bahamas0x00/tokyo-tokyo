@@ -1,5 +1,6 @@
 'use strict';
 const UI = (() => {
+  let _prevStats = null;  // 上次的属性值，用于「数值突变」提示
 
   function show(id) {
     document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
@@ -27,6 +28,14 @@ const UI = (() => {
     setText('val-energy',    Math.floor(p.energy));
     setText('val-health',    Math.floor(p.health));
     setText('val-happiness', Math.floor(p.happiness));
+    // 数值突变提示（事件/消费/危机的明显增减；缓慢衰减不触发）
+    if (_prevStats) {
+      ['energy', 'health', 'happiness'].forEach(k => {
+        const d = p[k] - _prevStats[k];
+        if (Math.abs(d) >= 3) spawnStatFloat(k, d);
+      });
+    }
+    _prevStats = { energy: p.energy, health: p.health, happiness: p.happiness };
     // 低值预警 + 病倒视觉
     ['energy', 'health', 'happiness'].forEach(k => {
       const bar = document.getElementById('bar-' + k);
@@ -327,12 +336,12 @@ const UI = (() => {
       { type: 'ai',       labelKey: 'upgrade.ai',       tiers: AI_TIERS },
     ];
 
-    // 渐进解锁：已拥有 或 余额接近下一级售价 才显示
+    // 只显示「还能买的下一级」：买满(一次性设备购入/AI满级)即从本栏消失
+    //（已拥有的会在左侧「当前配置」体现），余额接近售价才出现
     const visibleDefs = TIER_DEFS.filter(def => {
       const lv  = (p.tierLevels && p.tierLevels[def.type]) || 0;
-      const cur = def.tiers.find(tr => tr.level === lv);
       const nxt = def.tiers.find(tr => tr.level === lv + 1);
-      return cur || (nxt && p.isRevealed(nxt.cost));
+      return nxt && p.isRevealed(nxt.cost);
     });
     const tiersHtml = visibleDefs.map(def => {
       const currentLevel = (p.tierLevels && p.tierLevels[def.type]) || 0;
@@ -508,6 +517,18 @@ const UI = (() => {
     el.style.top  = (rect.top  - 10) + 'px';
     document.body.appendChild(el);
     setTimeout(() => el.remove(), 900);
+  }
+
+  // 属性数值突变提示：在对应状态条旁飘 +N(绿)/−N(红)
+  function spawnStatFloat(key, d) {
+    const bar = document.getElementById('bar-' + key);
+    const row = bar && bar.closest('.stat-row');
+    if (!row) return;
+    const el = document.createElement('div');
+    el.className = 'stat-float ' + (d < 0 ? 'down' : 'up');
+    el.textContent = (d < 0 ? '−' : '+') + Math.round(Math.abs(d));
+    row.appendChild(el);
+    setTimeout(() => el.remove(), 1100);
   }
 
   // ── market news banner ─────────────────────────────────────

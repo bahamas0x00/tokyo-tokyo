@@ -170,7 +170,7 @@ html, body { height: 100%; overflow: hidden; background: var(--bg); color: var(-
 .panel-bottom   { margin-top: auto; display: flex; flex-direction: column; gap: 6px; }
 
 /* stat bars */
-.stat-row { display: grid; grid-template-columns: 30px 1fr 24px; align-items: center; gap: 6px; }
+.stat-row { display: grid; grid-template-columns: 30px 1fr 24px; align-items: center; gap: 6px; position: relative; }
 .stat-label { font-family: var(--font-dot); font-size: 11px; color: var(--dim); }
 .stat-bar-wrap { height: 12px; background: var(--bg); border: 2px solid var(--dim); overflow: hidden; }
 .stat-bar { height: 100%; transition: width .4s steps(10); }
@@ -651,6 +651,21 @@ html, body { height: 100%; overflow: hidden; background: var(--bg); color: var(-
 .music-name {
   font-family: var(--font-dot); font-size: 10px; color: var(--dim);
   flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+
+/* —— 属性数值突变飘字 —— */
+.stat-float {
+  position: absolute; right: 0; top: -4px; z-index: 5;
+  font-family: var(--font-dot); font-size: 14px; font-weight: 700;
+  pointer-events: none; text-shadow: 1px 1px 0 #000;
+  animation: statFloat 1.1s ease-out forwards;
+}
+.stat-float.down { color: var(--pink); }
+.stat-float.up   { color: var(--green); }
+@keyframes statFloat {
+  0%   { opacity: 0; transform: translateY(6px); }
+  20%  { opacity: 1; }
+  100% { opacity: 0; transform: translateY(-20px); }
 }
 
 /* —— 属性低值预警 + 病倒 —— */
