@@ -108,7 +108,8 @@
           </button>
           <button class="menu-btn secondary small" id="btn-save" data-i18n="btn.save">[ 存档 ]</button>
           <button class="menu-btn secondary small" id="btn-to-title" data-i18n="btn.title">[ 主页 ]</button>
-          <div class="music-bar">
+          <!-- 音乐功能暂时搁置：隐藏控制条；game.js 里 bindMusic 调用也已注释。要开回来：去掉这里的 display:none + 取消注释 -->
+          <div class="music-bar" style="display:none">
             <button class="music-btn" id="btn-music" title="音乐开/关">🔇</button>
             <button class="music-btn" id="btn-music-next" title="切换电台">⏭</button>
             <button class="music-btn" id="btn-music-dislike" title="不喜欢（拉黑并切走）">👎</button>

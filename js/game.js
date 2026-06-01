@@ -117,7 +117,7 @@ const Game = (() => {
     document.getElementById('btn-to-title').addEventListener('click', () => {
       save(); UI.show('title');
     });
-    bindMusic();
+    // bindMusic();  // 音乐功能暂时搁置（要开回来取消本行注释 + index.html 去掉 .music-bar 的 display:none）
   }
 
   // ── lofi 背景音乐（多电台 · 切换 · 不喜欢拉黑）─────────────
