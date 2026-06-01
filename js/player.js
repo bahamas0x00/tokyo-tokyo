@@ -207,6 +207,7 @@ class Player {
     if (!next || !this.canAfford(next.cost)) return false;
     this.money -= next.cost;
     this.tierLevels[type] = next.level;
+    if (next.statBonus) this.modify(next.statBonus); // 解锁时一次性结算体力/健康/开心加成（数值待定）
     return next;
   }
 
@@ -271,6 +272,12 @@ class Player {
   static fromJSON(d) {
     const p = new Player(d.name);
     Object.assign(p, d);
+    // 设备改为一次性解锁：旧存档里 keyboard/monitor/chair 的 lv2/lv3 统一降为 lv1
+    if (p.tierLevels) {
+      ['keyboard', 'monitor', 'chair'].forEach(k => {
+        if (p.tierLevels[k] > 1) p.tierLevels[k] = 1;
+      });
+    }
     // 迁移旧存档
     const port = p.portfolio;
     if (typeof port.bonds === 'number') port.bonds = { qty: port.bonds };
@@ -310,23 +317,21 @@ const INVESTMENTS = {
 };
 
 // ── 点击升级定义 ──────────────────────────────────────────────
-// 分级升级：键盘 / 显示器（每级替换上一级，只保留当前等级）
+// 键盘 / 显示器 / 椅子：一次性解锁（买一次即拥有，不再重复购买）
+//   bonus    = ¥/点击 加成（永久）
+//   statBonus= 体力/健康/开心 加成占位（数值待定）。买入时一次性结算，
+//              想好后填入即可，例：椅子 statBonus: { health: 10 }。
+//              若要改成「持续被动」效果，在 Player.tick() 里另行处理。
 const KEYBOARD_TIERS = [
-  { level: 1, label: 'メカニカルキーボード', emoji: '⌨️', bonus: 80,   cost: 5000,   desc: '敲起来有感觉了，效率提升。' },
-  { level: 2, label: '人間工学キーボード',   emoji: '⌨️', bonus: 250,  cost: 20000,  desc: '手腕不疼了，可以敲更久。' },
-  { level: 3, label: '静電容量無接点キーボード', emoji: '⌨️', bonus: 700, cost: 80000, desc: '打字声音很好听，你感觉自己很厉害。' },
+  { level: 1, label: '人間工学キーボード', emoji: '⌨️', bonus: 250, cost: 20000,  statBonus: {}, desc: '手腕不疼了，可以敲更久。一次解锁，永久有效。' },
 ];
 
 const MONITOR_TIERS = [
-  { level: 1, label: '4Kモニター',           emoji: '🖥️', bonus: 200,  cost: 15000,  desc: '代码看起来更贵了。' },
-  { level: 2, label: 'ウルトラワイド曲面',   emoji: '🖥️', bonus: 600,  cost: 60000,  desc: '视野开阔，bug 也更容易发现了。' },
-  { level: 3, label: 'デュアル4K',           emoji: '🖥️', bonus: 1500, cost: 200000, desc: '两块屏幕。你终于感觉像个真正的程序员了。' },
+  { level: 1, label: 'ウルトラワイド曲面', emoji: '🖥️', bonus: 600, cost: 60000,  statBonus: {}, desc: '视野开阔，bug 也更容易发现了。一次解锁，永久有效。' },
 ];
 
 const CHAIR_TIERS = [
-  { level: 1, label: 'ゲーミングチェア',  emoji: '🪑', bonus: 300,  cost: 30000,  desc: '比公司的椅子好多了。腰不疼了。' },
-  { level: 2, label: 'エルゴチェア',      emoji: '🪑', bonus: 800,  cost: 120000, desc: '你开始理解为什么程序员都爱这个。' },
-  { level: 3, label: 'ハーマンミラー',    emoji: '🪑', bonus: 2000, cost: 500000, desc: '¥50万的椅子。坐上去的第一秒你觉得值了。' },
+  { level: 1, label: 'エルゴチェア', emoji: '🪑', bonus: 800, cost: 120000, statBonus: {}, desc: '你开始理解为什么程序员都爱这个。一次解锁，永久有效。' },
 ];
 
 // AI 自动点击（分级，每级加快点击频率）

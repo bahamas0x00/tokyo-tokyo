@@ -72,6 +72,7 @@ const I18N = {
     'upgrade.chair':     '椅子',
     'upgrade.ai':        'AI助手',
     'upgrade.maxed':     '已满级 ✓',
+    'upgrade.owned':     '已解锁 ✓',
     'upgrade.ai.run':    '▶ 启动运行',
 
     // auto shop
@@ -231,6 +232,7 @@ const I18N = {
     'upgrade.chair':     'Chair',
     'upgrade.ai':        'AI Assist',
     'upgrade.maxed':     'Maxed ✓',
+    'upgrade.owned':     'Unlocked ✓',
     'upgrade.ai.run':    '▶ Start Run',
 
     // auto shop
@@ -390,6 +392,7 @@ const I18N = {
     'upgrade.chair':     'チェア',
     'upgrade.ai':        'AIアシスト',
     'upgrade.maxed':     '最大強化済 ✓',
+    'upgrade.owned':     '解除済 ✓',
     'upgrade.ai.run':    '▶ 起動',
 
     // auto shop

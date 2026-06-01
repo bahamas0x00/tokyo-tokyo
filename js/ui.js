@@ -307,7 +307,8 @@ const UI = (() => {
         ? `<span class="neon-cyan" style="font-size:10px">${current.label}</span>`
         : `<span class="dim" style="font-size:10px">${t('config.empty')}</span>`;
 
-      const btnLabel = maxed ? t('upgrade.maxed') : next ? fmtMoney(next.cost) : '─';
+      const btnLabel = maxed ? (def.type === 'ai' ? t('upgrade.maxed') : t('upgrade.owned'))
+                             : next ? fmtMoney(next.cost) : '─';
       const nextDesc = next ? next.desc : (current ? current.desc : '');
       const nextBonus = next
         ? (def.type === 'ai' ? `${next.autoClickInterval/1000}s/click` : `+¥${next.bonus}/click`)

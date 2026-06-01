@@ -124,36 +124,81 @@
           <span class="mono dim">DAY </span><span class="neon-pink mono" id="hdr-day">1</span>
         </div>
 
-        <!-- 像素办公室点击区 -->
+        <!-- 像素办公室点击区：显示器 + 键盘 -->
         <div class="pixel-office" id="btn-click">
-          <!-- 主角（小组长） -->
-          <div class="px-worker-wrap">
-            <svg id="px-main-worker" class="px-character" width="64" height="72" viewBox="0 0 16 18" style="image-rendering:pixelated">
-              <!-- hair -->
-              <rect x="4" y="0" width="8" height="2" fill="#3d2b1f"/>
-              <rect x="3" y="1" width="10" height="3" fill="#3d2b1f"/>
-              <!-- face -->
-              <rect x="3" y="3" width="10" height="6" fill="#f7a072"/>
-              <!-- eyes -->
-              <rect x="4" y="5" width="2" height="2" fill="#1a1a2e"/>
-              <rect x="10" y="5" width="2" height="2" fill="#1a1a2e"/>
-              <!-- smile -->
-              <rect x="5" y="8" width="6" height="1" fill="#c0392b"/>
-              <!-- shirt -->
-              <rect x="2" y="9" width="12" height="5" fill="#e8e8f0"/>
-              <!-- tie -->
-              <rect x="7" y="9" width="2" height="5" fill="#ff6b6b"/>
-              <!-- arms -->
-              <rect x="0" y="10" width="2" height="3" fill="#f7a072"/>
-              <rect x="14" y="10" width="2" height="3" fill="#f7a072"/>
-              <!-- pants -->
-              <rect x="4" y="14" width="8" height="3" fill="#2d3561"/>
-              <!-- shoes -->
-              <rect x="3" y="16" width="4" height="2" fill="#1a1a2e"/>
-              <rect x="9" y="16" width="4" height="2" fill="#1a1a2e"/>
-            </svg>
-            <div class="px-desk"></div>
-            <div class="px-worker-label" id="player-role-label">小 组 长</div>
+          <div class="px-setup" id="px-main-worker">
+            <!-- 显示器 -->
+            <div class="px-monitor">
+              <div class="px-screen">
+                <!-- 滚动代码（绿色 matrix）-->
+                <div class="px-code">async fn ship(){
+ const c = commit()
+ if(!c) throw Bug
+ review(c); merge()
+}
+class Shacho {
+ overtime += 1
+ salary -= tax
+ sleep = 0
+}
+while(alive){
+ push(code)
+ deploy(prod)
+ // 逃げたい…
+}
+git push --force
+async fn ship(){
+ const c = commit()
+ if(!c) throw Bug
+ review(c); merge()
+}
+class Shacho {
+ overtime += 1
+ salary -= tax
+ sleep = 0
+}
+while(alive){
+ push(code)
+ deploy(prod)
+ // 逃げたい…
+}
+git push --force</div>
+                <!-- 跳舞的像素少女（绫波丽风·原创致敬） -->
+                <svg class="px-dancer" width="44" height="60" viewBox="0 0 16 22" style="image-rendering:pixelated">
+                  <!-- 头发（淡蓝） -->
+                  <rect x="4" y="0" width="8" height="2" fill="#a9dcec"/>
+                  <rect x="3" y="1" width="10" height="3" fill="#a9dcec"/>
+                  <rect x="2" y="3" width="12" height="6" fill="#a9dcec"/>
+                  <!-- 脸（苍白） -->
+                  <rect x="4" y="4" width="8" height="5" fill="#f5e6dc"/>
+                  <!-- 刘海一缕 -->
+                  <rect x="7" y="4" width="2" height="2" fill="#a9dcec"/>
+                  <!-- 红眼 -->
+                  <rect x="5" y="6" width="2" height="2" fill="#e0555f"/>
+                  <rect x="9" y="6" width="2" height="2" fill="#e0555f"/>
+                  <!-- 身体（白色战斗服） -->
+                  <rect x="3" y="9" width="10" height="7" fill="#eef1f6"/>
+                  <!-- 蓝色领口 -->
+                  <rect x="6" y="9" width="4" height="2" fill="#6fb7d6"/>
+                  <!-- 举起的手臂（跳舞） -->
+                  <rect x="1" y="8" width="2" height="4" fill="#f5e6dc"/>
+                  <rect x="13" y="8" width="2" height="4" fill="#f5e6dc"/>
+                  <!-- 腿 -->
+                  <rect x="4" y="16" width="3" height="5" fill="#f5e6dc"/>
+                  <rect x="9" y="16" width="3" height="5" fill="#f5e6dc"/>
+                </svg>
+              </div>
+              <!-- 屏幕扫描线 -->
+              <div class="px-scan"></div>
+            </div>
+            <!-- 显示器底座 -->
+            <div class="px-monitor-neck"></div>
+            <div class="px-monitor-foot"></div>
+            <!-- 键盘 -->
+            <div class="px-keyboard">
+              <span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span>
+              <span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span>
+            </div>
           </div>
 
           <div class="click-info">

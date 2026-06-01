@@ -219,27 +219,77 @@ html, body { height: 100%; overflow: hidden; background: var(--bg); color: var(-
   transition: all .1s;
   user-select: none;
 }
+.pixel-office { align-items: center; }
 .pixel-office:hover  { background: #1e1e38; }
 .pixel-office:active { transform: translate(2px, 2px); box-shadow: 2px 2px 0 #7a4000; }
 
-/* pixel worker (main, player) */
-.px-worker-wrap { display: flex; flex-direction: column; align-items: center; gap: 4px; }
-.px-worker-label { font-family: var(--font-px); font-size: 7px; color: var(--gold); }
-.px-character { image-rendering: pixelated; }
-.px-character.typing { animation: type-anim .4s steps(2) infinite; }
-@keyframes type-anim {
-  0%   { transform: translateY(0); }
-  50%  { transform: translateY(-3px); }
-  100% { transform: translateY(0); }
-}
+/* ── 显示器 + 键盘 ── */
+.px-setup { display: flex; flex-direction: column; align-items: center; gap: 0; }
 
-/* desk */
-.px-desk {
-  width: 80px; height: 12px;
+.px-monitor {
+  background: #15151f;
+  border: 3px solid #2b2b40;
+  padding: 4px;
+  box-shadow: 0 0 0 2px #000, 0 0 14px rgba(0,240,255,.18);
+}
+.px-screen {
+  position: relative;
+  width: 104px; height: 68px;
+  background: #041109;
+  overflow: hidden;
+}
+/* 滚动代码 */
+.px-code {
+  position: absolute; left: 3px; top: 0; right: 0;
+  margin: 0;
+  font-family: var(--font-px);
+  font-size: 5px; line-height: 8px;
+  color: #39d353; text-shadow: 0 0 3px rgba(57,211,83,.7);
+  white-space: pre; opacity: .45;
+  animation: code-scroll 6s linear infinite;
+}
+@keyframes code-scroll { from { transform: translateY(0); } to { transform: translateY(-50%); } }
+/* 屏幕扫描线 */
+.px-scan {
+  position: absolute; inset: 4px;
+  pointer-events: none;
+  background: repeating-linear-gradient(0deg, transparent 0 2px, rgba(0,0,0,.25) 2px 3px);
+}
+/* 跳舞的像素少女 */
+.px-dancer {
+  position: absolute; left: 50%; bottom: 3px; margin-left: -22px;
+  transform-origin: center bottom;
+  animation: dance .85s infinite;
+  filter: drop-shadow(0 0 2px rgba(0,240,255,.4));
+}
+@keyframes dance {
+  0%   { transform: translateX(-2px) rotate(-5deg); }
+  25%  { transform: translateX(0)    rotate(0deg) translateY(-2px); }
+  50%  { transform: translateX(2px)  rotate(5deg); }
+  75%  { transform: translateX(0)    rotate(0deg) translateY(-2px); }
+  100% { transform: translateX(-2px) rotate(-5deg); }
+}
+/* 显示器底座 */
+.px-monitor-neck { width: 16px; height: 8px; background: #2b2b40; border-left: 2px solid #000; border-right: 2px solid #000; }
+.px-monitor-foot { width: 44px; height: 5px; background: #2b2b40; border: 2px solid #000; box-shadow: 0 3px 0 #7a4000; margin-bottom: 8px; }
+
+/* 键盘 */
+.px-keyboard {
+  width: 100px; height: 22px;
   background: var(--orange);
   border: 2px solid #7a4000;
   box-shadow: 0 4px 0 #7a4000;
+  display: grid;
+  grid-template-columns: repeat(8, 1fr);
+  grid-template-rows: repeat(2, 1fr);
+  gap: 2px; padding: 3px;
 }
+.px-keyboard span { background: #2d2238; box-shadow: inset 0 1px 0 rgba(255,255,255,.15); }
+
+/* 点击反馈：屏幕闪一下 + 少女加速跳 + 键盘按下 */
+.px-setup.typing .px-screen { box-shadow: inset 0 0 10px rgba(57,211,83,.7); }
+.px-setup.typing .px-dancer { animation-duration: .35s; }
+.px-setup.typing .px-keyboard { transform: translateY(2px); box-shadow: 0 2px 0 #7a4000; }
 
 /* click info */
 .click-info {

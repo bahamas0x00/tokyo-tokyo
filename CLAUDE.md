@@ -51,7 +51,7 @@ tokyo-tokyo/
 ### 收益与机制（player.js）
 
 - **点击收益** `clickValue` = `(baseClickValue 100 + 设备 bonus) × 体力系数`。体力 >60 满额，30–60 ×0.7，<30 ×0.4。
-- **设备升级** 键盘 / 显示器 / 椅子，各 3 档（`*_TIERS`），**替换式**只保留当前级，加点击 bonus。
+- **设备升级** 键盘 / 显示器 / 椅子，各为**一次性解锁**（`*_TIERS` 现为单级数组，买一次即拥有，不再重复购买），永久加点击 bonus；每件含 `statBonus` 占位字段（体力/健康/开心加成，数值待定，解锁时由 `buyTierUpgrade` 一次性 `modify`）。旧存档里 lv2/lv3 会在 `fromJSON` 迁移降为 lv1。
 - **AI 助手** `AI_TIERS` 3 档，点击频率 5s→2s→0.5s。购买后通过 AI 配置弹窗按时长付费运行（消耗 token、产出代码，见 `AI_TOKEN_COST`/`AI_EARN_RATE`），AI 自动点击**不消耗体力**。
 - **後輩（kohai）** 需晋升到「主任」（`careerLevel >= 2`）后才能向 HR 申请（`submitHRApplication`）：付 ¥50k → 45s 审核 → 70% 批准入职 / 30% 拒绝退款，5min 冷却。後輩按 `0.1 clicks/sec` 自动点击，产出累计进 `kohaiEarned`。
 - **职级** 新卒社員→平社員→主任→係長→課長（`careerLevel` 0–4）。按天数 + `work>70` 自然晋升。`day = 1 + floor(totalEarned / 500000)`，由累计收入推进，**不是真实日期**。
@@ -96,4 +96,6 @@ tokyo-tokyo/
 
 ### 配色变量（style.css）
 
-主要色彩：`--pink #ff2d78`（主交互色）、`--cyan #00f0ff`（信息色）、`--purple #9d00ff`（选项按钮）、`--green #00ff88`（健康/已完成）、霓虹金 `neon-gold`（金钱）。修改这几个变量可整体换肤。像素角色是内联 SVG（见 index.html `#px-main-worker`）。
+主要色彩：`--pink #ff2d78`（主交互色）、`--cyan #00f0ff`（信息色）、`--purple #9d00ff`（选项按钮）、`--green #00ff88`（健康/已完成）、霓虹金 `neon-gold`（金钱）。修改这几个变量可整体换肤。
+
+中央点击区（`#btn-click` / `.pixel-office`）是「**像素显示器 + 键盘**」：显示器屏幕里有绿色滚动代码（`.px-code`，`code-scroll` 动画）+ 跳舞的像素少女 SVG（`.px-dancer`，绫波丽风原创致敬，`dance` 动画）+ 扫描线。`#px-main-worker`（现为 `.px-setup` 容器）在点击时由 game.js 加 `.typing` 类触发屏幕闪烁/键盘按下反馈。
