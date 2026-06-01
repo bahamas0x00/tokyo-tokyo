@@ -19,7 +19,7 @@ const UI = (() => {
     setText('val-money',      fmtMoney(p.money));
     setText('val-total',      fmtMoney(p.totalEarned));
     setText('val-click',      '¥' + p.clickValue);
-    setText('val-passive',    fmtMoney(p.passivePerSec) + '/s');
+    setText('val-passive',    fmtMoney(p.totalPerSec) + '/s');  // 总收入=投资+自动化
     setText('val-click-rate', '¥' + p.clickValue + '/CLICK');
     setBar('bar-energy',    p.energy);
     setBar('bar-health',    p.health);
@@ -33,7 +33,7 @@ const UI = (() => {
   }
 
   // ── team panel ─────────────────────────────────────────────
-  const KOHAI_STATUSES = ['バグ修正中…', 'コードレビュー', '資料作成中', 'ミーティング', '残業中…', 'お茶汲み'];
+  // 後輩工作状态/姓名按语言取自 i18n.js（kohaiStatuses() / memberNames()）
   const KOHAI_SVG = `<svg class="kohai-char" width="36" height="40" viewBox="0 0 9 10" style="image-rendering:pixelated">
     <rect x="2" y="0" width="5" height="1" fill="#3d2b1f"/>
     <rect x="2" y="1" width="5" height="3" fill="#f7a072"/>
@@ -55,17 +55,18 @@ const UI = (() => {
       el.innerHTML = `<span style="font-size:11px;color:var(--dim)">${t('team.empty')}</span>`;
       return;
     }
-    const names = ['田中','铃木','佐藤','高桥','渡边','中村','小林','加藤','吉田','山田'];
+    const names = memberNames();
+    const statuses = kohaiStatuses();
     const html = Array.from({ length: Math.min(count, 8) }, (_, i) => {
       const name   = names[i % names.length];
-      const status = KOHAI_STATUSES[(i + Math.floor(Date.now()/5000)) % KOHAI_STATUSES.length];
+      const status = statuses[(i + Math.floor(Date.now()/5000)) % statuses.length];
       return `<div class="team-member">
         ${KOHAI_SVG}
         <div class="team-member-name">${name}</div>
         <div class="team-member-status">${status}</div>
       </div>`;
     }).join('');
-    const more = count > 8 ? `<div class="team-member"><div style="font-family:var(--font-px);font-size:8px;color:var(--dim)">+${count-8}人</div></div>` : '';
+    const more = count > 8 ? `<div class="team-member"><div style="font-family:var(--font-px);font-size:8px;color:var(--dim)">${t('team.more', { n: count-8 })}</div></div>` : '';
     el.innerHTML = html + more;
   }
 
@@ -97,7 +98,7 @@ const UI = (() => {
     el.innerHTML = defs.map(d => {
       const lv   = levels[d.type] || 0;
       const tier = d.tiers.find(tr => tr.level === lv);
-      const label = tier ? tier.label : t(d.emptyKey);
+      const label = tier ? tf(tier, 'label') : t(d.emptyKey);
       const color = tier ? 'neon-cyan' : 'dim';
       return `<div class="config-row">
         <span>${tier ? tier.emoji : '·'}</span>
@@ -183,7 +184,7 @@ const UI = (() => {
 
     if (!p.canApplyForKohai) {
       var staffItems = `<div class="shop-item locked">
-        <div class="shop-item-header"><span>👥 後輩エンジニア</span><span class="shop-count">×${count}</span></div>
+        <div class="shop-item-header"><span>👥 ${tf(AUTO_STAFF[0], 'label')}</span><span class="shop-count">×${count}</span></div>
         <div class="shop-item-desc" style="color:var(--pink)">${t('kohai.locked')}<br/>${t('kohai.locked.cur', { title: p.title, day: p.day })}</div>
       </div>`;
     } else if (p.hrPending) {
@@ -200,7 +201,7 @@ const UI = (() => {
       const disabled   = onCooldown || !canAfford;
       var staffItems = `<div class="shop-item ${disabled ? 'locked' : ''}">
         <div class="shop-item-header">
-          <span>👥 後輩エンジニア</span>
+          <span>👥 ${tf(AUTO_STAFF[0], 'label')}</span>
           <span class="shop-count neon-cyan">×${count}</span>
         </div>
         <div class="shop-item-desc">${count === 0 ? t('kohai.recruit.first') : t('kohai.recruit.more', { n: count })}
@@ -304,7 +305,7 @@ const UI = (() => {
       const disabled  = maxed || !canAfford;
 
       const statusLabel = current
-        ? `<span class="neon-cyan" style="font-size:10px">${current.label}</span>`
+        ? `<span class="neon-cyan" style="font-size:10px">${tf(current, 'label')}</span>`
         : `<span class="dim" style="font-size:10px">${t('config.empty')}</span>`;
 
       const btnLabel = maxed ? (def.type === 'ai' ? t('upgrade.maxed') : t('upgrade.owned'))
@@ -312,10 +313,6 @@ const UI = (() => {
       const nextDesc = next ? tf(next, 'desc') : (current ? tf(current, 'desc') : '');
       const nextBonus = next
         ? (def.type === 'ai' ? `${next.autoClickInterval/1000}s/click` : `+¥${next.bonus}/click`)
-        : '';
-
-      const aiRunBtn = (def.type === 'ai' && currentLevel > 0)
-        ? `<button class="shop-btn ai-run-btn" data-type="ai-run">${t('upgrade.ai.run')}</button>`
         : '';
 
       return `<div class="shop-item ${disabled ? 'locked' : ''}">
@@ -326,20 +323,13 @@ const UI = (() => {
         <div class="shop-item-desc">${nextDesc}</div>
         <div class="shop-item-footer">
           ${nextBonus ? `<span class="shop-yield neon-cyan">${nextBonus}</span>` : '<span></span>'}
-          <div style="display:flex;gap:6px;flex-wrap:wrap">
-            <button class="shop-btn ${disabled ? 'disabled' : ''}" data-type="${def.type}">${btnLabel}</button>
-            ${aiRunBtn}
-          </div>
+          <button class="shop-btn ${disabled ? 'disabled' : ''}" data-type="${def.type}">${btnLabel}</button>
         </div>
       </div>`;
     }).join('');
 
     el.querySelectorAll('.shop-btn:not(.disabled)').forEach(btn => {
       btn.addEventListener('click', () => onBuy(btn.dataset.type));
-    });
-    // 「启动运行」按钮单独绑定（不走 disabled 过滤）
-    el.querySelectorAll('.ai-run-btn').forEach(btn => {
-      btn.addEventListener('click', () => onBuy('ai-run'));
     });
   }
 
@@ -556,7 +546,7 @@ const UI = (() => {
     show, updateStats, updateClock,
     renderAutoShop, renderInvestShop, renderUpgradeShop, renderLifeShop,
     showEventPopup, hideEventPopup,
-    spawnFloat, showMarketNews, appendLog, toast,
+    spawnFloat, spawnAutoFloat, showMarketNews, appendLog, toast,
     showStoryBadge, showStories,
   };
 })();

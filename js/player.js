@@ -55,7 +55,11 @@ class Player {
   }
 
   // ── 职级（独立于天数，可贿赂提升）────────────────────────────
-  get title() { return ['新卒社員','平社員','主任','係長','課長'][this.careerLevel] || '新卒社員'; }
+  get title() {
+    return (typeof careerTitle === 'function')
+      ? careerTitle(this.careerLevel)
+      : (['新卒社員','平社員','主任','係長','課長'][this.careerLevel] || '新卒社員');
+  }
   get canApplyForKohai() { return this.careerLevel >= 2; } // 主任以上
 
   // ── 点击收益（受体力影响）────────────────────────────────────
@@ -87,6 +91,12 @@ class Player {
     const btcQty   = this.portfolio.btc?.qty   || 0;
     return bondsQty * INVESTMENTS.bonds.basePerSec
          + btcQty   * INVESTMENTS.btc.basePerSec * this.btcMarket;
+  }
+
+  // ── 每秒总收入（投资被动 + 自动点击）─────────────────────────
+  // 财务面板「/sec」用它，避免与自动化面板的产出重复/矛盾
+  get totalPerSec() {
+    return this.passivePerSec + this.autoClickPerSec * this.clickValue;
   }
 
   // ── BTC 当前卖出总价 ─────────────────────────────────────────
@@ -221,11 +231,6 @@ class Player {
     }, 0);
   }
 
-  getAIInterval() {
-    const level = this.tierLevels.ai || 0;
-    const tier  = AI_TIERS.find(t => t.level === level);
-    return tier ? tier.autoClickInterval : null;
-  }
 
   buyShopItem(id) {
     const item = SHOP_ITEMS.find(s => s.id === id);
@@ -301,7 +306,7 @@ class Player {
 // ── 投资定义 ─────────────────────────────────────────────────
 const INVESTMENTS = {
   bonds: {
-    id: 'bonds', label: '日本国債', label_ja: '日本国債', label_en: 'JGB Bond', emoji: '📜',
+    id: 'bonds', label: '日本国债', label_ja: '日本国債', label_en: 'JGB Bond', emoji: '📜',
     price: 50000,
     basePerSec: 1.5,
     desc:    '稳定，无聊，但绝不归零。买了就忘。',
@@ -327,21 +332,21 @@ const INVESTMENTS = {
 //              想好后填入即可，例：椅子 statBonus: { health: 10 }。
 //              若要改成「持续被动」效果，在 Player.tick() 里另行处理。
 const KEYBOARD_TIERS = [
-  { level: 1, label: '人間工学キーボード', emoji: '⌨️', bonus: 250, cost: 20000,  statBonus: {},
+  { level: 1, label: '人体工学键盘', label_ja: '人間工学キーボード', label_en: 'Ergonomic Keyboard', emoji: '⌨️', bonus: 250, cost: 20000,  statBonus: {},
     desc:    '手腕不疼了，可以敲更久。一次解锁，永久有效。',
     desc_ja: '手首が痛くない、もっと長く打てる。一度解放、永久有効。',
     desc_en: 'Wrists stop aching, type longer. One-time unlock, permanent.' },
 ];
 
 const MONITOR_TIERS = [
-  { level: 1, label: 'ウルトラワイド曲面', emoji: '🖥️', bonus: 600, cost: 60000,  statBonus: {},
+  { level: 1, label: '带鱼屏曲面显示器', label_ja: 'ウルトラワイド曲面', label_en: 'Ultrawide Curved', emoji: '🖥️', bonus: 600, cost: 60000,  statBonus: {},
     desc:    '视野开阔，bug 也更容易发现了。一次解锁，永久有效。',
     desc_ja: '視野が広い、バグも見つけやすい。一度解放、永久有効。',
     desc_en: 'Wide view, bugs easier to spot. One-time unlock, permanent.' },
 ];
 
 const CHAIR_TIERS = [
-  { level: 1, label: 'エルゴチェア', emoji: '🪑', bonus: 800, cost: 120000, statBonus: {},
+  { level: 1, label: '人体工学椅', label_ja: 'エルゴチェア', label_en: 'Ergonomic Chair', emoji: '🪑', bonus: 800, cost: 120000, statBonus: {},
     desc:    '你开始理解为什么程序员都爱这个。一次解锁，永久有效。',
     desc_ja: 'なぜエンジニアが愛するのか分かってきた。一度解放、永久有効。',
     desc_en: 'You get why devs love these. One-time unlock, permanent.' },
@@ -349,15 +354,15 @@ const CHAIR_TIERS = [
 
 // AI 自动点击（分级，每级加快点击频率）
 const AI_TIERS = [
-  { level: 1, label: '基本AIアシスト',   emoji: '🤖', autoClickInterval: 5000, cost: 200000,
+  { level: 1, label: '基础AI助手', label_ja: '基本AIアシスト', label_en: 'Basic AI Assist',   emoji: '🤖', autoClickInterval: 5000, cost: 200000,
     desc:    '每5秒自动敲一次代码。你还是需要在的。',
     desc_ja: '5秒ごとに自動でコードを書く。まだ君が必要。',
     desc_en: 'Auto-types code every 5s. Still needs you around.' },
-  { level: 2, label: '上位AIアシスト',   emoji: '🤖', autoClickInterval: 2000, cost: 800000,
+  { level: 2, label: '高级AI助手', label_ja: '上位AIアシスト', label_en: 'Pro AI Assist',   emoji: '🤖', autoClickInterval: 2000, cost: 800000,
     desc:    '每2秒。你开始怀疑自己存在的意义。',
     desc_ja: '2秒ごと。自分の存在意義を疑い始める。',
     desc_en: 'Every 2s. You start questioning your purpose.' },
-  { level: 3, label: 'AGIアシスト',      emoji: '🤖', autoClickInterval: 500,  cost: 5000000,
+  { level: 3, label: 'AGI助手', label_ja: 'AGIアシスト', label_en: 'AGI Assist',      emoji: '🤖', autoClickInterval: 500,  cost: 5000000,
     desc:    '你只是在看它工作。这就是社畜的终点站吗？',
     desc_ja: 'ただ眺めているだけ。これが社畜の終着駅か？',
     desc_en: 'You just watch it work. Is this the end of the line?' },
@@ -366,7 +371,7 @@ const AI_TIERS = [
 // ── 自动化员工（可叠加购买）──────────────────────────────────
 const AUTO_STAFF = [
   {
-    id: 'kohai', label: '後輩エンジニア', emoji: '👨‍💻',
+    id: 'kohai', label: '后辈工程师', label_ja: '後輩エンジニア', label_en: 'Junior Engineer', emoji: '👨‍💻',
     cost: 30000,
     clicksPerSec: 0.1,   // 每10秒1次
     desc:    '刚毕业的后辈，帮你敲一些代码。速度有限，但总比没有强。',

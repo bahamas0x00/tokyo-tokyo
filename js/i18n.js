@@ -40,8 +40,9 @@ const I18N = {
     'btn.title':         '[ 主页 ]',
 
     // center panel
-    'team.title':        'チーム（被压榨成员）',
+    'team.title':        '团队（被压榨成员）',
     'team.empty':        '目前只有你一个人……',
+    'team.more':         '+{n}人',
     'log.title':         '── 今日记录 ──',
     'popup.tag':         '── 突发事件 ──',
     'choice.continue':   '── 继续 ──',
@@ -210,6 +211,7 @@ const I18N = {
     // center panel
     'team.title':        'Team (The Exploited)',
     'team.empty':        'Just you for now…',
+    'team.more':         '+{n}',
     'log.title':         '── Today\'s Log ──',
     'popup.tag':         '── EVENT ──',
     'choice.continue':   '── Continue ──',
@@ -378,6 +380,7 @@ const I18N = {
     // center panel
     'team.title':        'チーム（搾取される側）',
     'team.empty':        '今はあなただけ……',
+    'team.more':         '+{n}人',
     'log.title':         '── 本日の記録 ──',
     'popup.tag':         '── イベント発生 ──',
     'choice.continue':   '── 続ける ──',
@@ -523,6 +526,31 @@ function tf(obj, base) {
   if (!obj) return '';
   return obj[base + '_' + _lang] ?? obj[base] ?? '';
 }
+
+// ── 按职级/随机的本地化数组（每种语言下全用该语言）──────────────
+const CAREER_TITLES = {
+  zh: ['新人',         '正式员工',  '主任',         '系长',          '课长'],
+  ja: ['新卒社員',     '平社員',    '主任',         '係長',          '課長'],
+  en: ['New Hire',     'Staff',     'Section Chief','Section Mgr',   'Dept Head'],
+};
+function careerTitle(level) {
+  const a = CAREER_TITLES[_lang] || CAREER_TITLES.zh;
+  return a[level] ?? a[0];
+}
+
+const KOHAI_STATUSES_I18N = {
+  zh: ['修Bug中…',     '代码审查',        '写文档中',       '开会中',        '加班中…',     '端茶倒水'],
+  ja: ['バグ修正中…',  'コードレビュー',  '資料作成中',     'ミーティング',  '残業中…',     'お茶汲み'],
+  en: ['Fixing bugs…', 'Code review',     'Writing docs',   'In a meeting',  'Overtime…',   'Making tea'],
+};
+function kohaiStatuses() { return KOHAI_STATUSES_I18N[_lang] || KOHAI_STATUSES_I18N.zh; }
+
+const MEMBER_NAMES_I18N = {
+  zh: ['田中','铃木','佐藤','高桥','渡边','中村','小林','加藤','吉田','山田'],
+  ja: ['田中','鈴木','佐藤','高橋','渡辺','中村','小林','加藤','吉田','山田'],
+  en: ['Tanaka','Suzuki','Sato','Takahashi','Watanabe','Nakamura','Kobayashi','Kato','Yoshida','Yamada'],
+};
+function memberNames() { return MEMBER_NAMES_I18N[_lang] || MEMBER_NAMES_I18N.zh; }
 
 function getLang() { return _lang; }
 

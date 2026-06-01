@@ -4,8 +4,6 @@ const Game = (() => {
   let player = null;
   let eventActive = false;
   let fujokuVisits = 0;
-  let aiTimer = null;      // auto-click interval
-  let aiRunEnd = 0;        // timestamp when current AI run ends
 
   // ── 风俗店故事序列 ────────────────────────────────────────
   const FUJOKU_STORIES = [
@@ -180,12 +178,10 @@ const Game = (() => {
     });
 
     UI.renderUpgradeShop(player, type => {
-      if (type === 'ai-run') { showAIConfig(); return; }
       const result = player.buyTierUpgrade(type);
       if (result) {
-        UI.appendLog(t('log.upgrade', { emoji: result.emoji, name: result.label }), 'good');
-        UI.toast(`${result.label} ✓`);
-        if (type === 'ai') resetAITimer();
+        UI.appendLog(t('log.upgrade', { emoji: result.emoji, name: tf(result, 'label') }), 'good');
+        UI.toast(`${tf(result, 'label')} ✓`);
         UI.updateStats(player);
         renderShops();
         save();
@@ -345,107 +341,6 @@ const Game = (() => {
       renderShops();
       save();
     }, HR_WAIT_MS);
-  }
-
-  // ── AI 配置弹窗 ───────────────────────────────────────────
-  const AI_TOKEN_COST = { 1: 40, 2: 120, 3: 400 }; // ¥/sec 每级 token 消耗
-  const AI_EARN_RATE  = { 1: 80, 2: 250, 3: 1000}; // ¥/sec 每级产出（基于 clickValue）
-
-  function showAIConfig() {
-    const level = (player.tierLevels && player.tierLevels.ai) || 0;
-    if (level === 0) { UI.toast(t('toast.ai_need_buy')); return; }
-
-    const tierDef   = AI_TIERS.find(t => t.level === level);
-    const costPerSec = AI_TOKEN_COST[level];
-    const earnPerSec = AI_EARN_RATE[level];
-    const netPerSec  = earnPerSec - costPerSec;
-
-    const durations = [
-      { labelKey: 'ai.dur.1h',  secs: 3600 },
-      { labelKey: 'ai.dur.4h',  secs: 14400 },
-      { labelKey: 'ai.dur.8h',  secs: 28800 },
-      { labelKey: 'ai.dur.24h', secs: 86400 },
-    ];
-
-    // 构建弹窗 HTML
-    const popup = document.createElement('div');
-    popup.className = 'ai-config-overlay';
-    popup.innerHTML = `
-      <div class="ai-config-box">
-        <div class="ai-config-title neon-cyan">── ${tierDef.emoji} ${tierDef.label} ──</div>
-        <div class="ai-config-desc">${tierDef.desc}</div>
-        <div class="ai-config-stats">
-          <div><span class="dim">${t('ai.cost_per_sec')}</span><span class="neon-pink">${fmtMoney(costPerSec)}/sec</span></div>
-          <div><span class="dim">${t('ai.earn_per_sec')}</span><span class="neon-green">${fmtMoney(earnPerSec)}/sec</span></div>
-          <div><span class="dim">${t('ai.net_per_sec')}</span><span class="neon-green">+${fmtMoney(netPerSec)}/sec</span></div>
-        </div>
-        <div class="ai-config-label dim">${t('ai.choose_dur')}</div>
-        <div class="ai-duration-list">
-          ${durations.map(d => {
-            const totalCost   = costPerSec * d.secs;
-            const totalEarn   = earnPerSec * d.secs;
-            const profit      = totalEarn - totalCost;
-            const canAfford   = player.money >= totalCost;
-            return `<button class="ai-dur-btn ${canAfford ? '' : 'disabled'}" data-secs="${d.secs}" data-cost="${totalCost}">
-              <span class="dur-label">${t(d.labelKey)}</span>
-              <span class="dur-cost dim">${t('ai.dur.cost', { n: fmtMoney(totalCost) })}</span>
-              <span class="dur-profit neon-green">${t('ai.dur.profit', { n: fmtMoney(profit) })}</span>
-            </button>`;
-          }).join('')}
-        </div>
-        <button class="menu-btn secondary small" id="ai-config-close">${t('toast.ai_cancel')}</button>
-      </div>`;
-
-    document.body.appendChild(popup);
-    popup.querySelector('#ai-config-close').addEventListener('click', () => popup.remove());
-
-    popup.querySelectorAll('.ai-dur-btn:not(.disabled)').forEach(btn => {
-      btn.addEventListener('click', () => {
-        const secs = parseInt(btn.dataset.secs);
-        const cost = parseFloat(btn.dataset.cost);
-        popup.remove();
-        startAIRun(level, secs, cost);
-      });
-    });
-  }
-
-  function startAIRun(level, secs, cost) {
-    if (!player.canAfford(cost)) { UI.toast(t('toast.ai_no_fund')); return; }
-    player.money -= cost;
-    aiRunEnd = Date.now() + secs * 1000;
-    player.aiRunEnd = aiRunEnd;
-    resetAITimer();
-    UI.appendLog(t('log.ai_start', { n: Math.round(secs/3600) }), 'good');
-    UI.toast(t('toast.ai_start'));
-    save();
-  }
-
-  function resetAITimer() {
-    clearInterval(aiTimer);
-    aiTimer = null;
-    const level = (player.tierLevels && player.tierLevels.ai) || 0;
-    const now   = Date.now();
-    const runEnd = player.aiRunEnd || 0;
-    if (level === 0 || now >= runEnd) return;
-
-    const tierDef = AI_TIERS.find(t => t.level === level);
-    if (!tierDef) return;
-
-    aiTimer = setInterval(() => {
-      if (Date.now() >= (player.aiRunEnd || 0)) {
-        clearInterval(aiTimer);
-        aiTimer = null;
-        UI.appendLog(t('log.ai_end'), 'neutral');
-        UI.toast(t('log.ai_end'));
-        return;
-      }
-      // AI 自动点击（不消耗体力）
-      const earned = Math.floor(AI_EARN_RATE[level] * (tierDef.autoClickInterval / 1000));
-      player.money       += earned;
-      player.totalEarned += earned;
-      UI.spawnFloat(earned);
-      UI.updateStats(player);
-    }, tierDef.autoClickInterval);
   }
 
   // ── save ─────────────────────────────────────────────────
