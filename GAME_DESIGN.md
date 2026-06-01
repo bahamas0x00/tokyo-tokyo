@@ -184,7 +184,7 @@
 - **重度像素粗犷风**：硬偏移阴影、实色块、像素虚线分隔、CRT 扫描线 + 棋盘抖动纹理、`steps()` 顿挫动画；不用柔光/模糊/渐变。
 - 配色变量在 `style.css` `:root`；标题/语言页与主界面的风格块在 `style.css` 末尾两段（带「重度像素粗犷风」注释）。
 
-- **背景音乐**：SomaFM 在线流（柔和优先：Groove Salad / Drone Zone …，鼓点重的 Fluid 最后）。左栏控制条：🔇开关 / ⏭切换电台 / 👎不喜欢(拉黑当前电台并切走)。开关、当前电台、黑名单都持久化（`localStorage.tokyo_bgm / tokyo_bgm_station / tokyo_bgm_dislike`）；首次点击后才播（浏览器自动播放限制）。电台列表 = `js/game.js` 的 `BGM_STATIONS`。
+- **背景音乐**：**本地优先**（`assets/bgm.mp3`，放自己的曲子；不存在则自动回退）+ SomaFM 在线流。左栏控制条：🔇开关 / ⏭切换电台 / 👎不喜欢(拉黑当前并切走)。开关/当前电台/黑名单持久化（`localStorage.tokyo_bgm / _station / _dislike`）；首次点击后才播（浏览器自动播放限制）。电台/曲目列表 = `js/game.js` 的 `BGM_STATIONS`（`url` 字段=本地/自定义，否则按 id 拼 SomaFM 流）。
 
 📍去哪改：`style.css`（控制条样式）；音乐在 `index.html` `<audio>` + `js/game.js` `BGM_STATIONS` / `bindMusic`。
 

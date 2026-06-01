@@ -122,14 +122,15 @@ const Game = (() => {
 
   // ── lofi 背景音乐（多电台 · 切换 · 不喜欢拉黑）─────────────
   // 柔和优先；鼓点重的 Fluid 放最后。换源改这里即可。
+  // 本地曲优先（放你自己的 lofi tokyo），找不到再回退在线流
   const BGM_STATIONS = [
+    { id: 'local',        name: '本地 lofi（assets/bgm.mp3）', url: 'assets/bgm.mp3' },
     { id: 'groovesalad',  name: 'Groove Salad · chill' },
     { id: 'dronezone',    name: 'Drone Zone · ambient' },
     { id: 'gsclassic',    name: 'Groove Salad Classic' },
-    { id: 'deepspaceone', name: 'Deep Space One · 深空' },
     { id: 'fluid',        name: 'Fluid · lofi beats' },
   ];
-  const bgmUrl = id => `https://ice1.somafm.com/${id}-128-mp3`;
+  const srcOf = s => s.url || `https://ice1.somafm.com/${s.id}-128-mp3`;
 
   function bindMusic() {
     const bgm = document.getElementById('bgm');
@@ -150,14 +151,14 @@ const Game = (() => {
     const refresh = () => { btn.textContent = on ? '🎵' : '🔇'; if (nameEl) nameEl.textContent = cur().name; };
 
     function load(play) {
-      bgm.src = bgmUrl(stationId);
+      bgm.src = srcOf(cur());
       localStorage.setItem('tokyo_bgm_station', stationId);
       if (on && play) bgm.play().catch(() => {});
       refresh();
     }
     function setOn(v) {
       on = v; localStorage.setItem('tokyo_bgm', on ? 'on' : 'off');
-      if (on) { if (!bgm.src) bgm.src = bgmUrl(stationId); bgm.play().catch(() => {}); }
+      if (on) { if (!bgm.src) bgm.src = srcOf(cur()); bgm.play().catch(() => {}); }
       else bgm.pause();
       refresh();
     }
@@ -181,8 +182,15 @@ const Game = (() => {
     btn.addEventListener('click', () => setOn(!on));
     if (btnNext) btnNext.addEventListener('click', next);
     if (btnDis)  btnDis.addEventListener('click', dislike);
+    // 本地曲不存在时自动回退到在线流
+    bgm.addEventListener('error', () => {
+      if (cur().id === 'local') {
+        const list = avail().filter(s => s.id !== 'local');
+        if (list.length) { stationId = list[0].id; load(on); }
+      }
+    });
 
-    bgm.src = bgmUrl(stationId);
+    bgm.src = srcOf(cur());
     refresh();
     // 浏览器禁止无交互自动播放：若上次开着，首次任意点击后恢复
     if (on) {
