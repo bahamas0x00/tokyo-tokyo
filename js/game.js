@@ -300,6 +300,35 @@ const Game = (() => {
       UI.updateStats(player);
       renderShops();
       save();
+      // 工位趴一会有风险被上司逮到
+      if (id === 'rest' && Math.random() < 0.25) bossCatch();
+    });
+  }
+
+  // ── 工位睡觉被上司逮到 ────────────────────────────────────
+  function bossCatch() {
+    if (eventActive) return;
+    eventActive = true;
+    const fine = 1500 + Math.floor(Math.random() * 2500); // 罚款 ¥1.5k–4k
+    UI.showEventPopup({
+      text: t('boss.catch.text'),
+      choices: [
+        { label: t('boss.catch.c1'), reply: t('boss.catch.c1r', { fine: fmtMoney(fine) }), tone: 'bad', _fine: fine },
+        { label: t('boss.catch.c2'), reply: t('boss.catch.c2r'), tone: 'bad', _warn: true },
+      ],
+    }, choice => {
+      if (choice._fine) {
+        player.money = Math.max(0, player.money - choice._fine);
+        player.happiness = clamp(player.happiness - 8, 0, 100);
+      } else {
+        player.happiness = clamp(player.happiness - 15, 0, 100);
+        player.health    = clamp(player.health    - 5,  0, 100);
+      }
+      UI.appendLog(t('boss.catch.log'), 'bad');
+      UI.updateStats(player);
+      renderShops();
+      save();
+      eventActive = false;
     });
   }
 

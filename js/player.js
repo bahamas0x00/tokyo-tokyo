@@ -6,13 +6,13 @@ class Player {
   constructor(name) {
     this.name      = name;
     this.day       = 1;
-    this.energy    = 80;
-    this.health    = 85;
-    this.happiness = 60;
+    this.energy    = 100;         // 新角色满状态
+    this.health    = 100;
+    this.happiness = 100;
     this.sickUntil = 0;           // 病倒结束时间戳（>now = 正在强制休息）
-    this.minEnergy    = 80;       // 历史最低值（生活消费「按需求」解锁用，单调不增）
-    this.minHealth    = 85;
-    this.minHappiness = 60;
+    this.minEnergy    = 100;      // 历史最低值（生活消费「按需求」解锁用，单调不增）
+    this.minHealth    = 100;
+    this.minHappiness = 100;
     this.crisisShown  = false;    // 离职危机是否已弹（快乐回升后重置）
     this.money     = 0;           // 当前余额
     this.totalEarned = 0;         // 累计赚过的钱

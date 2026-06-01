@@ -653,6 +653,14 @@ html, body { height: 100%; overflow: hidden; background: var(--bg); color: var(-
   flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
 }
 
+/* —— 新手点击引导 —— */
+.click-hint {
+  text-align: center; flex-shrink: 0; padding: 8px 6px;
+  font-family: var(--font-dot); font-size: 15px; font-weight: 700; color: var(--gold);
+  text-shadow: 2px 2px 0 #7a4000; animation: hintPulse 1s steps(2) infinite;
+}
+@keyframes hintPulse { 0%,100% { opacity: 1; transform: translateY(0); } 50% { opacity: .55; transform: translateY(3px); } }
+
 /* —— 属性数值突变飘字 —— */
 .stat-float {
   position: absolute; right: 0; top: -4px; z-index: 5;

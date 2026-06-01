@@ -82,22 +82,22 @@
             <span class="dim" data-i18n="finance.click">点击: </span><span id="val-click" class="neon-cyan">¥100</span>
             <span class="dim" data-i18n="finance.sec"> &nbsp;/sec: </span><span id="val-passive" class="neon-green">¥0</span>
           </div>
-          <div class="money-sub" id="kohai-earned-row" style="margin-top:6px;border-top:1px solid var(--dim);padding-top:6px">
+          <div class="money-sub" id="kohai-earned-row" style="display:none;margin-top:6px;border-top:1px solid var(--dim);padding-top:6px">
             <span class="dim" data-i18n="finance.kohai">後輩压榨累计: </span><span id="val-kohai-earned" class="neon-cyan">¥0</span>
           </div>
         </div>
 
-        <div class="panel-section">
+        <div class="panel-section" style="display:none">
           <div class="panel-title" data-i18n="panel.config">── 当前配置 ──</div>
           <div id="config-display"></div>
         </div>
 
-        <div class="panel-section">
+        <div class="panel-section" style="display:none">
           <div class="panel-title" data-i18n="panel.portfolio">── 投资组合 ──</div>
           <div id="portfolio-display"></div>
         </div>
 
-        <div class="panel-section">
+        <div class="panel-section" style="display:none">
           <div class="panel-title" data-i18n="panel.market">── 市场行情 ──</div>
           <div id="market-display"></div>
         </div>
@@ -129,6 +129,9 @@
           <span class="dim">|</span>
           <span class="mono dim">DAY </span><span class="neon-pink mono" id="hdr-day">1</span>
         </div>
+
+        <!-- 新手引导：点击赚钱（赚到一定钱后自动隐藏）-->
+        <div id="click-hint" class="click-hint" data-i18n="hint.click">👆 点击下面的屏幕，敲代码赚钱</div>
 
         <!-- 像素办公室点击区：显示器 + 键盘 -->
         <div class="pixel-office" id="btn-click">
