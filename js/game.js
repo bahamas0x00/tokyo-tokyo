@@ -180,6 +180,16 @@ const Game = (() => {
     });
 
     UI.renderUpgradeShop(player, type => {
+      if (type === 'kohai-buy') {
+        if (player.buyAutoStaff('kohai')) {
+          UI.appendLog(t('log.buy', { emoji: AUTO_STAFF[0].emoji, name: tf(AUTO_STAFF[0], 'label') }), 'good');
+          UI.toast(t('toast.buy_ok', { name: tf(AUTO_STAFF[0], 'label') }));
+          UI.updateStats(player); renderShops(); save();
+        } else {
+          UI.toast(t('toast.no_fund'));
+        }
+        return;
+      }
       const result = player.buyTierUpgrade(type);
       if (result) {
         UI.appendLog(t('log.upgrade', { emoji: result.emoji, name: tf(result, 'label') }), 'good');

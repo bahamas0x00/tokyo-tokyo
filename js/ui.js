@@ -95,7 +95,7 @@ const UI = (() => {
       { type: 'chair',    tiers: CHAIR_TIERS,    emptyKey: 'config.chair.empty' },
       { type: 'ai',       tiers: AI_TIERS,       emptyKey: 'config.ai.empty' },
     ];
-    el.innerHTML = defs.map(d => {
+    let html = defs.map(d => {
       const lv   = levels[d.type] || 0;
       const tier = d.tiers.find(tr => tr.level === lv);
       const label = tier ? tf(tier, 'label') : t(d.emptyKey);
@@ -105,6 +105,15 @@ const UI = (() => {
         <span class="${color}" style="font-size:11px">${label}</span>
       </div>`;
     }).join('');
+    // 後輩团队（有了才显示）
+    const kohaiCount = p.autoStaff?.kohai || 0;
+    if (kohaiCount > 0) {
+      html += `<div class="config-row">
+        <span>${AUTO_STAFF[0].emoji}</span>
+        <span class="neon-cyan" style="font-size:11px">${tf(AUTO_STAFF[0], 'label')} ×${kohaiCount}</span>
+      </div>`;
+    }
+    el.innerHTML = html;
   }
 
   function updatePortfolio(p, onSell) {
@@ -307,9 +316,7 @@ const UI = (() => {
       const nxt = def.tiers.find(tr => tr.level === lv + 1);
       return cur || (nxt && p.isRevealed(nxt.cost));
     });
-    el.closest('.panel-section').style.display = visibleDefs.length ? '' : 'none';
-
-    el.innerHTML = visibleDefs.map(def => {
+    const tiersHtml = visibleDefs.map(def => {
       const currentLevel = (p.tierLevels && p.tierLevels[def.type]) || 0;
       const current = def.tiers.find(tr => tr.level === currentLevel);
       const next    = def.tiers.find(tr => tr.level === currentLevel + 1);
@@ -341,8 +348,32 @@ const UI = (() => {
       </div>`;
     }).join('');
 
+    // 後輩(kohai)：晋升到主任后并入本栏（直接购买，价格递增 ×1.15）
+    let kohaiHtml = '';
+    if (p.canApplyForKohai) {
+      const def    = AUTO_STAFF[0];
+      const count  = p.autoStaff?.kohai || 0;
+      const price  = p.autoStaffPrice('kohai');
+      const afford = p.money >= price;
+      kohaiHtml = `<div class="shop-item ${afford ? '' : 'locked'}">
+        <div class="shop-item-header">
+          <span>${def.emoji} ${tf(def, 'label')}</span>
+          <span class="shop-count neon-cyan">×${count}</span>
+        </div>
+        <div class="shop-item-desc">${tf(def, 'desc')}</div>
+        <div class="shop-item-footer">
+          <span class="shop-yield neon-green">+0.1 clicks/s</span>
+          <button class="shop-btn ${afford ? '' : 'disabled'}" data-kohai="1">${fmtMoney(price)}</button>
+        </div>
+      </div>`;
+    }
+
+    el.closest('.panel-section').style.display = (tiersHtml || kohaiHtml) ? '' : 'none';
+    el.innerHTML = tiersHtml + kohaiHtml;
+
     el.querySelectorAll('.shop-btn:not(.disabled)').forEach(btn => {
-      btn.addEventListener('click', () => onBuy(btn.dataset.type));
+      if (btn.dataset.kohai) btn.addEventListener('click', () => onBuy('kohai-buy'));
+      else btn.addEventListener('click', () => onBuy(btn.dataset.type));
     });
   }
 
