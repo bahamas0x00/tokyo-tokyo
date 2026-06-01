@@ -87,8 +87,8 @@ const Game = (() => {
     if (Save.hasSave() && !confirm(t('toast.overwrite'))) return;
     err.classList.add('hidden');
     player = new Player(name);
-    player.addLog(t('log.welcome'), 'neutral');  // 开局引导：今日记录里提示点击赚钱
     enterGame();
+    UI.appendLog(t('log.welcome'), 'neutral');  // 开局引导：写进今日记录(DOM)
   }
 
   function loadGame(data) {
