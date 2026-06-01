@@ -169,8 +169,8 @@ const Game = (() => {
     UI.renderInvestShop(player, key => {
       if (player.buyInvestment(key)) {
         const inv = INVESTMENTS[key];
-        UI.appendLog(t('log.buy', { emoji: inv.emoji, name: inv.label }), 'good');
-        UI.toast(t('toast.buy_ok', { name: inv.label }));
+        UI.appendLog(t('log.buy', { emoji: inv.emoji, name: tf(inv, 'label') }), 'good');
+        UI.toast(t('toast.buy_ok', { name: tf(inv, 'label') }));
         UI.updateStats(player);
         renderShops();
         save();
@@ -204,8 +204,8 @@ const Game = (() => {
       if (!player.canAfford(item.cost)) { UI.toast(t('toast.no_fund')); return; }
       if (!player.canUseShop(id, item.cooldown)) { UI.toast(t('toast.cooldown')); return; }
       player.buyShopItem(id);
-      UI.appendLog(`${item.emoji} ${item.reply || item.label}`, item.tone);
-      UI.toast(`${item.emoji} ${item.label}`);
+      UI.appendLog(`${item.emoji} ${tf(item, 'reply') || tf(item, 'label')}`, item.tone);
+      UI.toast(`${item.emoji} ${tf(item, 'label')}`);
       UI.updateStats(player);
       renderShops();
       save();
@@ -215,7 +215,7 @@ const Game = (() => {
   // ── 风俗店购买 → 触发故事事件 ────────────────────────────
   function buyFujoku() {
     const item = SHOP_ITEMS.find(s => s.id === 'fujoku');
-    if (!player.canAfford(item.cost)) { UI.toast('余额不足'); return; }
+    if (!player.canAfford(item.cost)) { UI.toast(t('toast.no_fund')); return; }
     player.money    -= item.cost;
     player.happiness = clamp(player.happiness + 40, 0, 100);
     player.health    = clamp(player.health    - 3,  0, 100);

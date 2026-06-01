@@ -301,17 +301,21 @@ class Player {
 // ── 投资定义 ─────────────────────────────────────────────────
 const INVESTMENTS = {
   bonds: {
-    id: 'bonds', label: '日本国債', emoji: '📜',
+    id: 'bonds', label: '日本国債', label_ja: '日本国債', label_en: 'JGB Bond', emoji: '📜',
     price: 50000,
     basePerSec: 1.5,
-    desc: '稳定，无聊，但绝不归零。买了就忘。',
+    desc:    '稳定，无聊，但绝不归零。买了就忘。',
+    desc_ja: '安定、退屈、でもゼロにはならない。買って忘れる。',
+    desc_en: 'Stable, boring, but never zero. Buy and forget.',
     canSell: false,
   },
   btc: {
-    id: 'btc', label: '比特币', emoji: '₿',
+    id: 'btc', label: '比特币', label_ja: 'ビットコイン', label_en: 'Bitcoin', emoji: '₿',
     price: 500000,
     basePerSec: 20.0,
-    desc: '可能让你财务自由，也可能让你哭着离开东京。',
+    desc:    '可能让你财务自由，也可能让你哭着离开东京。',
+    desc_ja: '経済的自由をくれるかも。泣きながら東京を去るかも。',
+    desc_en: 'Could set you free, or send you home crying.',
     canSell: true,
   },
 };
@@ -323,22 +327,40 @@ const INVESTMENTS = {
 //              想好后填入即可，例：椅子 statBonus: { health: 10 }。
 //              若要改成「持续被动」效果，在 Player.tick() 里另行处理。
 const KEYBOARD_TIERS = [
-  { level: 1, label: '人間工学キーボード', emoji: '⌨️', bonus: 250, cost: 20000,  statBonus: {}, desc: '手腕不疼了，可以敲更久。一次解锁，永久有效。' },
+  { level: 1, label: '人間工学キーボード', emoji: '⌨️', bonus: 250, cost: 20000,  statBonus: {},
+    desc:    '手腕不疼了，可以敲更久。一次解锁，永久有效。',
+    desc_ja: '手首が痛くない、もっと長く打てる。一度解放、永久有効。',
+    desc_en: 'Wrists stop aching, type longer. One-time unlock, permanent.' },
 ];
 
 const MONITOR_TIERS = [
-  { level: 1, label: 'ウルトラワイド曲面', emoji: '🖥️', bonus: 600, cost: 60000,  statBonus: {}, desc: '视野开阔，bug 也更容易发现了。一次解锁，永久有效。' },
+  { level: 1, label: 'ウルトラワイド曲面', emoji: '🖥️', bonus: 600, cost: 60000,  statBonus: {},
+    desc:    '视野开阔，bug 也更容易发现了。一次解锁，永久有效。',
+    desc_ja: '視野が広い、バグも見つけやすい。一度解放、永久有効。',
+    desc_en: 'Wide view, bugs easier to spot. One-time unlock, permanent.' },
 ];
 
 const CHAIR_TIERS = [
-  { level: 1, label: 'エルゴチェア', emoji: '🪑', bonus: 800, cost: 120000, statBonus: {}, desc: '你开始理解为什么程序员都爱这个。一次解锁，永久有效。' },
+  { level: 1, label: 'エルゴチェア', emoji: '🪑', bonus: 800, cost: 120000, statBonus: {},
+    desc:    '你开始理解为什么程序员都爱这个。一次解锁，永久有效。',
+    desc_ja: 'なぜエンジニアが愛するのか分かってきた。一度解放、永久有効。',
+    desc_en: 'You get why devs love these. One-time unlock, permanent.' },
 ];
 
 // AI 自动点击（分级，每级加快点击频率）
 const AI_TIERS = [
-  { level: 1, label: '基本AIアシスト',   emoji: '🤖', autoClickInterval: 5000, cost: 200000,   desc: '每5秒自动敲一次代码。你还是需要在的。' },
-  { level: 2, label: '上位AIアシスト',   emoji: '🤖', autoClickInterval: 2000, cost: 800000,   desc: '每2秒。你开始怀疑自己存在的意义。' },
-  { level: 3, label: 'AGIアシスト',      emoji: '🤖', autoClickInterval: 500,  cost: 5000000,  desc: '你只是在看它工作。这就是社畜的终点站吗？' },
+  { level: 1, label: '基本AIアシスト',   emoji: '🤖', autoClickInterval: 5000, cost: 200000,
+    desc:    '每5秒自动敲一次代码。你还是需要在的。',
+    desc_ja: '5秒ごとに自動でコードを書く。まだ君が必要。',
+    desc_en: 'Auto-types code every 5s. Still needs you around.' },
+  { level: 2, label: '上位AIアシスト',   emoji: '🤖', autoClickInterval: 2000, cost: 800000,
+    desc:    '每2秒。你开始怀疑自己存在的意义。',
+    desc_ja: '2秒ごと。自分の存在意義を疑い始める。',
+    desc_en: 'Every 2s. You start questioning your purpose.' },
+  { level: 3, label: 'AGIアシスト',      emoji: '🤖', autoClickInterval: 500,  cost: 5000000,
+    desc:    '你只是在看它工作。这就是社畜的终点站吗？',
+    desc_ja: 'ただ眺めているだけ。これが社畜の終着駅か？',
+    desc_en: 'You just watch it work. Is this the end of the line?' },
 ];
 
 // ── 自动化员工（可叠加购买）──────────────────────────────────
@@ -347,19 +369,43 @@ const AUTO_STAFF = [
     id: 'kohai', label: '後輩エンジニア', emoji: '👨‍💻',
     cost: 30000,
     clicksPerSec: 0.1,   // 每10秒1次
-    desc: '刚毕业的后辈，帮你敲一些代码。速度有限，但总比没有强。',
+    desc:    '刚毕业的后辈，帮你敲一些代码。速度有限，但总比没有强。',
+    desc_ja: '新卒の後輩。コードを少し手伝ってくれる。遅いが、いないよりマシ。',
+    desc_en: 'A fresh-grad junior who writes some code. Slow, but better than nothing.',
     costScale: 1.15,     // 每多买一个，价格×1.15
   },
 ];
 
 // ── 生活消费定义 ─────────────────────────────────────────────
 const SHOP_ITEMS = [
-  { id: 'rest',     label: '回家休息',  emoji: '🛋️', cost: 0,     cooldown: 3_600_000, changes: { energy: 25, health: 5  }, desc: '体力+25，健康+5',  reply: '你换上睡衣躺下来。最好的几分钟。',                          tone: 'good' },
-  { id: 'conbini',  label: '便利店',    emoji: '🏪', cost: 350,   cooldown: 1_800_000, changes: { energy: 10, happiness: 5  }, desc: '体力+10，快乐+5',  reply: '饭团还是饭团。"ありがとうございます"，今天听到最清晰的一句话。', tone: 'neutral' },
-  { id: 'ramen',    label: '拉面',      emoji: '🍜', cost: 950,   cooldown: 7_200_000, changes: { energy: 25, happiness: 18 }, desc: '体力+25，快乐+18', reply: '豚骨拉面。你对着白烟发了很久的呆。没有人跟你说话。没关系。',     tone: 'good' },
-  { id: 'izakaya',  label: '居酒屋',    emoji: '🍺', cost: 3000,  cooldown: 14_400_000,changes: { energy: -8, happiness: 30 }, desc: '快乐+30，体力-8',  reply: '生啤，枝豆。你听不懂旁边桌在说什么，但热闹的声音已经够了。',     tone: 'good' },
-  { id: 'gym',      label: '健身房',    emoji: '💪', cost: 1000,  cooldown: 86_400_000,changes: { health: 20, energy: -10  }, desc: '健康+20，体力-10', reply: '哑铃的重量是世界语言，不需要日语。',                          tone: 'good' },
-  { id: 'fujoku',   label: '风俗店',    emoji: '🏩', cost: 12000, cooldown: 0,          changes: { happiness: 40, health: -3  }, desc: '快乐+40，健康-3',  reply: null, tone: 'neutral' },
+  { id: 'rest', label: '回家休息', label_ja: '家で休む', label_en: 'Rest at home', emoji: '🛋️', cost: 0, cooldown: 3_600_000, changes: { energy: 25, health: 5 },
+    desc: '体力+25，健康+5', desc_ja: '体力+25 健康+5', desc_en: 'Energy+25 Health+5',
+    reply:    '你换上睡衣躺下来。最好的几分钟。',
+    reply_ja: 'パジャマに着替えて横になる。最高の数分間。',
+    reply_en: 'You change into pajamas and lie down. The best few minutes.', tone: 'good' },
+  { id: 'conbini', label: '便利店', label_ja: 'コンビニ', label_en: 'Convenience store', emoji: '🏪', cost: 350, cooldown: 1_800_000, changes: { energy: 10, happiness: 5 },
+    desc: '体力+10，快乐+5', desc_ja: '体力+10 幸福+5', desc_en: 'Energy+10 Mood+5',
+    reply:    '饭团还是饭团。"ありがとうございます"，今天听到最清晰的一句话。',
+    reply_ja: 'おにぎり、またおにぎり。「ありがとうございます」、今日いちばんはっきり聞こえた言葉。',
+    reply_en: 'Onigiri, again. "Arigatou gozaimasu" — the clearest words you heard all day.', tone: 'neutral' },
+  { id: 'ramen', label: '拉面', label_ja: 'ラーメン', label_en: 'Ramen', emoji: '🍜', cost: 950, cooldown: 7_200_000, changes: { energy: 25, happiness: 18 },
+    desc: '体力+25，快乐+18', desc_ja: '体力+25 幸福+18', desc_en: 'Energy+25 Mood+18',
+    reply:    '豚骨拉面。你对着白烟发了很久的呆。没有人跟你说话。没关系。',
+    reply_ja: '豚骨ラーメン。湯気をぼんやり眺める。誰も話しかけてこない。それでいい。',
+    reply_en: 'Tonkotsu ramen. You stare into the steam. Nobody talks to you. That\'s fine.', tone: 'good' },
+  { id: 'izakaya', label: '居酒屋', label_ja: '居酒屋', label_en: 'Izakaya', emoji: '🍺', cost: 3000, cooldown: 14_400_000, changes: { energy: -8, happiness: 30 },
+    desc: '快乐+30，体力-8', desc_ja: '幸福+30 体力-8', desc_en: 'Mood+30 Energy-8',
+    reply:    '生啤，枝豆。你听不懂旁边桌在说什么，但热闹的声音已经够了。',
+    reply_ja: '生ビール、枝豆。隣の席の会話は分からないけど、賑やかな音だけで十分。',
+    reply_en: 'Draft beer, edamame. You can\'t follow the next table, but the lively noise is enough.', tone: 'good' },
+  { id: 'gym', label: '健身房', label_ja: 'ジム', label_en: 'Gym', emoji: '💪', cost: 1000, cooldown: 86_400_000, changes: { health: 20, energy: -10 },
+    desc: '健康+20，体力-10', desc_ja: '健康+20 体力-10', desc_en: 'Health+20 Energy-10',
+    reply:    '哑铃的重量是世界语言，不需要日语。',
+    reply_ja: 'ダンベルの重さは世界共通言語。日本語はいらない。',
+    reply_en: 'The weight of a dumbbell is a universal language. No Japanese needed.', tone: 'good' },
+  { id: 'fujoku', label: '风俗店', label_ja: '風俗店', label_en: 'Nightlife', emoji: '🏩', cost: 12000, cooldown: 0, changes: { happiness: 40, health: -3 },
+    desc: '快乐+40，健康-3', desc_ja: '幸福+40 健康-3', desc_en: 'Mood+40 Health-3',
+    reply: null, tone: 'neutral' },
 ];
 
 // ── BTC 市场事件（weight 控制概率）───────────────────────────

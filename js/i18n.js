@@ -61,10 +61,18 @@ const I18N = {
     'portfolio.realized':   '已实现',
     'portfolio.empty':   '尚无投资',
     'sell.btn':          '卖出',
+    'portfolio.market':  '行情',
+    'portfolio.sellprice':'卖出价',
+    'portfolio.crash_warn':'⚠️ 比特币几乎归零。现在卖还能回点血。',
+    'inv.fixed':         '固定',
+    'inv.risk':          '高风险・可卖出',
 
     // config
     'config.empty':      '未配置',
     'config.ai.empty':   'AI未启动',
+    'config.keyboard.empty':'公司发的键盘',
+    'config.monitor.empty': '公司发的显示器',
+    'config.chair.empty':   '公司发的椅子',
 
     // upgrade shop
     'upgrade.keyboard':  '键盘',
@@ -221,10 +229,18 @@ const I18N = {
     'portfolio.realized':   'Realized',
     'portfolio.empty':   'No investments yet',
     'sell.btn':          'Sell',
+    'portfolio.market':  'Market',
+    'portfolio.sellprice':'Sell px',
+    'portfolio.crash_warn':'⚠️ Bitcoin near zero. Sell now to salvage something.',
+    'inv.fixed':         'fixed',
+    'inv.risk':          'High risk · sellable',
 
     // config
     'config.empty':      'Not configured',
     'config.ai.empty':   'AI inactive',
+    'config.keyboard.empty':'Company keyboard',
+    'config.monitor.empty': 'Company monitor',
+    'config.chair.empty':   'Company chair',
 
     // upgrade shop
     'upgrade.keyboard':  'Keyboard',
@@ -381,10 +397,18 @@ const I18N = {
     'portfolio.realized':   '確定損益',
     'portfolio.empty':   '投資なし',
     'sell.btn':          '売却',
+    'portfolio.market':  '相場',
+    'portfolio.sellprice':'売値',
+    'portfolio.crash_warn':'⚠️ ビットコインがほぼゼロ。今売れば少しは戻る。',
+    'inv.fixed':         '固定',
+    'inv.risk':          'ハイリスク・売却可',
 
     // config
     'config.empty':      '未設定',
     'config.ai.empty':   'AI停止中',
+    'config.keyboard.empty':'会社のキーボード',
+    'config.monitor.empty': '会社のモニター',
+    'config.chair.empty':   '会社の椅子',
 
     // upgrade shop
     'upgrade.keyboard':  'キーボード',
@@ -491,6 +515,13 @@ function t(key, vars) {
   const str = I18N[_lang]?.[key] ?? I18N.zh[key] ?? key;
   if (!vars) return str;
   return str.replace(/\{(\w+)\}/g, (_, k) => vars[k] ?? '');
+}
+
+// 数据对象字段本地化：返回 obj.<base>_<lang> ?? obj.<base>
+// 例：tf(item, 'label') → item.label_ja / item.label_en / item.label
+function tf(obj, base) {
+  if (!obj) return '';
+  return obj[base + '_' + _lang] ?? obj[base] ?? '';
 }
 
 function getLang() { return _lang; }

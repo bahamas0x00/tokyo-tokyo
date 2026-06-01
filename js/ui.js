@@ -89,10 +89,10 @@ const UI = (() => {
     if (!el) return;
     const levels = p.tierLevels || {};
     const defs = [
-      { type: 'keyboard', tiers: KEYBOARD_TIERS, emptyLabel: '会社のキーボード', emptyKey: 'config.empty' },
-      { type: 'monitor',  tiers: MONITOR_TIERS,  emptyLabel: '会社のモニター',   emptyKey: 'config.empty' },
-      { type: 'chair',    tiers: CHAIR_TIERS,    emptyLabel: '会社の椅子',       emptyKey: 'config.empty' },
-      { type: 'ai',       tiers: AI_TIERS,       emptyLabel: 'AI未启动',         emptyKey: 'config.ai.empty' },
+      { type: 'keyboard', tiers: KEYBOARD_TIERS, emptyKey: 'config.keyboard.empty' },
+      { type: 'monitor',  tiers: MONITOR_TIERS,  emptyKey: 'config.monitor.empty' },
+      { type: 'chair',    tiers: CHAIR_TIERS,    emptyKey: 'config.chair.empty' },
+      { type: 'ai',       tiers: AI_TIERS,       emptyKey: 'config.ai.empty' },
     ];
     el.innerHTML = defs.map(d => {
       const lv   = levels[d.type] || 0;
@@ -127,7 +127,7 @@ const UI = (() => {
       const perSec = bondsQty * INVESTMENTS.bonds.basePerSec;
       html += `<div class="portfolio-card">
         <div class="portfolio-row">
-          <span>📜 ${INVESTMENTS.bonds.label} ×${bondsQty}</span>
+          <span>📜 ${tf(INVESTMENTS.bonds, 'label')} ×${bondsQty}</span>
           <span class="neon-green" style="font-size:11px">${fmtMoney(perSec)}/s</span>
         </div>
       </div>`;
@@ -149,20 +149,20 @@ const UI = (() => {
 
       html += `<div class="portfolio-card ${isCrash ? 'btc-crash' : ''}">
         <div class="portfolio-row">
-          <span>₿ ${INVESTMENTS.btc.label} ×${btcQty}</span>
+          <span>₿ ${tf(INVESTMENTS.btc, 'label')} ×${btcQty}</span>
           <button class="sell-btn" id="btc-sell-btn">${t('sell.btn')}</button>
         </div>
         <div class="portfolio-detail">
-          <span class="dim">行情</span>
+          <span class="dim">${t('portfolio.market')}</span>
           <span class="${trendCls}">${trendIcon} ${sign}${pct}%</span>
-          <span class="dim">浮盈</span>
+          <span class="dim">${t('portfolio.gain')}</span>
           <span class="${gainCls}">${gainSign}${fmtMoney(gain)}</span>
-          <span class="dim">卖出价</span>
+          <span class="dim">${t('portfolio.sellprice')}</span>
           <span>${fmtMoney(sellVal)}</span>
           <span class="dim">/s</span>
           <span class="neon-green">${fmtMoney(perSec)}</span>
         </div>
-        ${isCrash ? `<div style="color:var(--pink);font-size:10px;padding:4px 0">⚠️ 比特币几乎归零。现在卖还能回点血。</div>` : ''}
+        ${isCrash ? `<div style="color:var(--pink);font-size:10px;padding:4px 0">${t('portfolio.crash_warn')}</div>` : ''}
       </div>`;
     }
 
@@ -245,12 +245,12 @@ const UI = (() => {
     const bondsAfford = p.money >= bondsInv.price;
     const bondsItem   = `<div class="shop-item ${bondsAfford ? '' : 'locked'}">
       <div class="shop-item-header">
-        <span>📜 ${bondsInv.label}</span>
+        <span>📜 ${tf(bondsInv, 'label')}</span>
         <span class="shop-count">×${bondsQty}</span>
       </div>
-      <div class="shop-item-desc">${bondsInv.desc}</div>
+      <div class="shop-item-desc">${tf(bondsInv, 'desc')}</div>
       <div class="shop-item-footer">
-        <span class="shop-yield neon-green">${fmtMoney(bondsInv.basePerSec)}/s 固定</span>
+        <span class="shop-yield neon-green">${fmtMoney(bondsInv.basePerSec)}/s ${t('inv.fixed')}</span>
         <button class="shop-btn ${bondsAfford ? '' : 'disabled'}" data-key="bonds">${fmtMoney(bondsInv.price)}</button>
       </div>
     </div>`;
@@ -266,14 +266,14 @@ const UI = (() => {
     const btcPerSec = btcInv.basePerSec * m;
     const btcItem   = `<div class="shop-item ${btcAfford ? '' : 'locked'}">
       <div class="shop-item-header">
-        <span>₿ ${btcInv.label}</span>
+        <span>₿ ${tf(btcInv, 'label')}</span>
         <span class="shop-count">×${btcQty}</span>
       </div>
-      <div class="shop-item-desc">${btcInv.desc}
-        <br/><span class="${mCls}" style="font-size:10px">行情 ${sign}${pct}% · ${fmtMoney(btcPerSec)}/s</span>
+      <div class="shop-item-desc">${tf(btcInv, 'desc')}
+        <br/><span class="${mCls}" style="font-size:10px">${t('portfolio.market')} ${sign}${pct}% · ${fmtMoney(btcPerSec)}/s</span>
       </div>
       <div class="shop-item-footer">
-        <span class="shop-yield dim">高风险・可卖出</span>
+        <span class="shop-yield dim">${t('inv.risk')}</span>
         <button class="shop-btn ${btcAfford ? '' : 'disabled'}" data-key="btc">${fmtMoney(btcInv.price)}</button>
       </div>
     </div>`;
@@ -309,7 +309,7 @@ const UI = (() => {
 
       const btnLabel = maxed ? (def.type === 'ai' ? t('upgrade.maxed') : t('upgrade.owned'))
                              : next ? fmtMoney(next.cost) : '─';
-      const nextDesc = next ? next.desc : (current ? current.desc : '');
+      const nextDesc = next ? tf(next, 'desc') : (current ? tf(current, 'desc') : '');
       const nextBonus = next
         ? (def.type === 'ai' ? `${next.autoClickInterval/1000}s/click` : `+¥${next.bonus}/click`)
         : '';
@@ -353,9 +353,9 @@ const UI = (() => {
       const cooldownLabel = onCooldown ? t('shop.cooldown') : '';
       return `<div class="shop-item ${disabled ? 'locked' : ''}">
         <div class="shop-item-header">
-          <span>${item.emoji} ${item.label}${cooldownLabel}</span>
+          <span>${item.emoji} ${tf(item, 'label')}${cooldownLabel}</span>
         </div>
-        <div class="shop-item-desc">${item.desc}</div>
+        <div class="shop-item-desc">${tf(item, 'desc')}</div>
         <div class="shop-item-footer">
           <button class="shop-btn ${disabled ? 'disabled' : ''}" data-id="${item.id}">
             ${item.cost === 0 ? t('shop.free') : fmtMoney(item.cost)}
