@@ -108,6 +108,7 @@
           </button>
           <button class="menu-btn secondary small" id="btn-save" data-i18n="btn.save">[ 存档 ]</button>
           <button class="menu-btn secondary small" id="btn-to-title" data-i18n="btn.title">[ 主页 ]</button>
+          <button class="menu-btn secondary small" id="btn-music">🎵</button>
         </div>
       </aside>
 
@@ -261,6 +262,11 @@ git push --force</div>
   <script src="js/player.js"></script>
   <script src="js/events.js"></script>
   <script src="js/ui.js"></script>
+  <!-- lofi 背景音乐（SomaFM 免费可直链流；浏览器禁止无交互自动播放，首次点击后开始）-->
+  <audio id="bgm" loop preload="none">
+    <source src="https://ice1.somafm.com/fluid-128-mp3" type="audio/mpeg" />
+  </audio>
+
   <script src="js/game.js"></script>
 </body>
 </html>

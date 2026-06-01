@@ -38,6 +38,8 @@ const I18N = {
     'btn.stories':       '📖 物語',
     'btn.save':          '[ 存档 ]',
     'btn.title':         '[ 主页 ]',
+    'music.on':          '🎵 音乐 开',
+    'music.off':         '🎵 音乐 关',
 
     // center panel
     'team.title':        '团队（被压榨成员）',
@@ -215,6 +217,8 @@ const I18N = {
     'btn.stories':       '📖 Stories',
     'btn.save':          '[ Save ]',
     'btn.title':         '[ Menu ]',
+    'music.on':          '🎵 Music On',
+    'music.off':         '🎵 Music Off',
 
     // center panel
     'team.title':        'Team (The Exploited)',
@@ -392,6 +396,8 @@ const I18N = {
     'btn.stories':       '📖 物語',
     'btn.save':          '[ セーブ ]',
     'btn.title':         '[ タイトル ]',
+    'music.on':          '🎵 BGM オン',
+    'music.off':         '🎵 BGM オフ',
 
     // center panel
     'team.title':        'チーム（搾取される側）',

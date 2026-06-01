@@ -117,6 +117,30 @@ const Game = (() => {
     document.getElementById('btn-to-title').addEventListener('click', () => {
       save(); UI.show('title');
     });
+    bindMusic();
+  }
+
+  // ── lofi 背景音乐 ─────────────────────────────────────────
+  function bindMusic() {
+    const bgm = document.getElementById('bgm');
+    const btn = document.getElementById('btn-music');
+    if (!bgm || !btn || btn.dataset.bound) return;
+    btn.dataset.bound = '1';
+    bgm.volume = 0.35;
+    let on = localStorage.getItem('tokyo_bgm') === 'on';
+    const refresh = () => { btn.textContent = t(on ? 'music.on' : 'music.off'); };
+    const apply = () => {
+      localStorage.setItem('tokyo_bgm', on ? 'on' : 'off');
+      if (on) bgm.play().catch(() => {}); else bgm.pause();
+      refresh();
+    };
+    btn.addEventListener('click', () => { on = !on; apply(); });
+    refresh();
+    // 浏览器禁止无交互自动播放：若上次开着，首次任意点击后恢复
+    if (on) {
+      const resume = () => { bgm.play().catch(() => {}); document.removeEventListener('click', resume); };
+      document.addEventListener('click', resume);
+    }
   }
 
   // ── main loop ─────────────────────────────────────────────

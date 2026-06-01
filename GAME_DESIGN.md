@@ -184,7 +184,9 @@
 - **重度像素粗犷风**：硬偏移阴影、实色块、像素虚线分隔、CRT 扫描线 + 棋盘抖动纹理、`steps()` 顿挫动画；不用柔光/模糊/渐变。
 - 配色变量在 `style.css` `:root`；标题/语言页与主界面的风格块在 `style.css` 末尾两段（带「重度像素粗犷风」注释）。
 
-📍去哪改：`style.css`。
+- **背景音乐**：lofi 在线流（SomaFM，`index.html` 的 `<audio id="bgm">`），左栏 🎵 按钮开关，记住偏好（`localStorage.tokyo_bgm`），首次点击后才播（浏览器自动播放限制）。换曲改 `<source src>`。
+
+📍去哪改：`style.css`；音乐在 `index.html` `<audio>` + `js/game.js` `bindMusic`。
 
 ---
 
