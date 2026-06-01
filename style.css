@@ -338,9 +338,10 @@ html, body { height: 100%; overflow: hidden; background: var(--bg); color: var(-
   background: var(--bg3);
   border: 3px solid var(--purple);
   color: var(--purple);
-  font-family: var(--font-px);
-  font-size: 9px;
-  padding: 8px 14px;
+  font-family: var(--font-ui);
+  font-size: 14px;
+  font-weight: 700;
+  padding: 10px 16px;
   cursor: pointer;
   transition: all .1s;
   box-shadow: 3px 3px 0 #3d2b7a;
