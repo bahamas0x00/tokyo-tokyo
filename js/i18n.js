@@ -48,6 +48,7 @@ const I18N = {
     'team.more':         '+{n}人',
     'log.title':         '── 今日记录 ──',
     'hint.click':        '👆 点击下面的屏幕，敲代码赚钱',
+    'log.welcome':       '👆 点击上方屏幕，敲代码赚钱',
     'popup.tag':         '── 突发事件 ──',
     'choice.continue':   '── 继续 ──',
 
@@ -235,6 +236,7 @@ const I18N = {
     'team.more':         '+{n}',
     'log.title':         '── Today\'s Log ──',
     'hint.click':        '👆 Click the screen below to write code & earn',
+    'log.welcome':       '👆 Click the screen above to write code & earn',
     'popup.tag':         '── EVENT ──',
     'choice.continue':   '── Continue ──',
 
@@ -422,6 +424,7 @@ const I18N = {
     'team.more':         '+{n}人',
     'log.title':         '── 本日の記録 ──',
     'hint.click':        '👆 下の画面をクリックしてコードを書こう',
+    'log.welcome':       '👆 上の画面をクリックしてコードを書いて稼ごう',
     'popup.tag':         '── イベント発生 ──',
     'choice.continue':   '── 続ける ──',
 

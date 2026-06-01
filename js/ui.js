@@ -119,14 +119,12 @@ const UI = (() => {
       { type: 'chair',    tiers: CHAIR_TIERS,    emptyKey: 'config.chair.empty' },
       { type: 'ai',       tiers: AI_TIERS,       emptyKey: 'config.ai.empty' },
     ];
-    let html = defs.map(d => {
-      const lv   = levels[d.type] || 0;
-      const tier = d.tiers.find(tr => tr.level === lv);
-      const label = tier ? tf(tier, 'label') : t(d.emptyKey);
-      const color = tier ? 'neon-cyan' : 'dim';
+    // 只显示「已拥有」的装备，避免提前剧透未解锁的项
+    let html = defs.filter(d => (levels[d.type] || 0) >= 1).map(d => {
+      const tier = d.tiers.find(tr => tr.level === (levels[d.type] || 0));
       return `<div class="config-row">
         <span>${tier ? tier.emoji : '·'}</span>
-        <span class="${color}" style="font-size:11px">${label}</span>
+        <span class="neon-cyan" style="font-size:11px">${tf(tier, 'label')}</span>
       </div>`;
     }).join('');
     // 後輩团队（有了才显示）
