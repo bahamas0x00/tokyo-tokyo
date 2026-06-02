@@ -317,11 +317,17 @@ const Game = (() => {
       save();
     };
 
-    UI.renderInvestShop(player, key => {
-      if (player.buyInvestment(key)) {
-        const inv = INVESTMENTS[key];
-        UI.appendLog(t('log.buy', { emoji: inv.emoji, name: tf(inv, 'label') }), 'good');
-        UI.toast(t('toast.buy_ok', { name: tf(inv, 'label') }));
+    UI.renderInvestShop(player, (key, qty = 1) => {
+      const inv = INVESTMENTS[key];
+      let bought = 0;
+      for (let i = 0; i < qty; i++) {
+        if (!player.buyInvestment(key)) break;
+        bought++;
+      }
+      if (bought > 0) {
+        const label = tf(inv, 'label');
+        UI.appendLog(t('log.buy', { emoji: inv.emoji, name: `${label} ×${bought}` }), 'good');
+        UI.toast(t('toast.buy_ok', { name: bought > 1 ? `${label} ×${bought}` : label }));
         UI.updateStats(player);
         renderShops();
         save();

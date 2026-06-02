@@ -450,6 +450,9 @@ html, body { height: 100%; overflow: hidden; background: var(--bg); color: var(-
 }
 .shop-btn:hover:not(.disabled) { background: var(--cyan); color: var(--bg); transform: translate(-1px,-1px); box-shadow: 3px 3px 0 #004080; }
 .shop-btn.disabled { opacity: .3; cursor: not-allowed; border-color: var(--dim); color: var(--dim); box-shadow: none; }
+.buy-btn-group { display: flex; gap: 4px; align-items: center; }
+.shop-btn-bulk { border-color: var(--purple); color: var(--purple); box-shadow: 2px 2px 0 #3d2b7a; padding: 6px 8px; }
+.shop-btn-bulk:hover:not(.disabled) { background: var(--purple); color: var(--bg); box-shadow: 3px 3px 0 #3d2b7a; }
 .ai-run-btn { border-color: var(--green); color: var(--green); box-shadow: 2px 2px 0 #006640; }
 .ai-run-btn:hover { background: var(--green) !important; color: var(--bg) !important; box-shadow: 3px 3px 0 #006640 !important; }
 .auto-summary  { font-family: var(--font-px); font-size: 9px; padding: 6px 0; border-top: 2px solid var(--border); margin-top: 2px; color: var(--dim); }

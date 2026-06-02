@@ -115,7 +115,6 @@ class Player {
     const ai = this.tierLevels?.ai || 0;
     if (ai >= 1) rate += 0.2;   // AI Lv1: +0.2/sec（每5秒1次）
     if (ai >= 2) rate += 0.3;   // AI Lv2: 累计 0.5/sec（每2秒1次）
-    if (ai >= 3) rate += 0.5;   // AI Lv3: 累计 1/sec（AGI也只是加速工具，不是印钞机）
     return rate;
   }
 
@@ -313,6 +312,8 @@ class Player {
 
   buyAutoStaff(id) {
     if (id === 'kohai' && (this.autoStaff?.kohai || 0) >= this.kohaiMax) return false;
+    const def = AUTO_STAFF.find(s => s.id === id);
+    if (def?.maxCount && (this.autoStaff?.[id] || 0) >= def.maxCount) return false;
     const price = this.autoStaffPrice(id);
     if (!this.canAfford(price)) return false;
     this.money -= price;
@@ -347,13 +348,14 @@ class Player {
   buyShopItem(id) {
     const item = SHOP_ITEMS.find(s => s.id === id);
     if (!item) return false;
-    if (!this.canAfford(item.cost)) return false;
+    const price = item.costFn ? item.costFn(this) : item.cost;
+    if (!this.canAfford(price)) return false;
     if (!this.canUseShop(id, item.cooldown)) return false;
     const ch = item.changes || {};
     if (ch.energy    < 0 && this.energy    <= 0) return false;
     if (ch.health    < 0 && this.health    <= 0) return false;
     if (ch.happiness < 0 && this.happiness <= 0) return false;
-    this.money -= item.cost;
+    this.money -= price;
     this.modify(item.changes);
     this.shopCooldowns[id] = Date.now();
     this.shopUseCounts = this.shopUseCounts || {};
@@ -498,18 +500,14 @@ const CHAIR_TIERS = [
 
 // AI 自动点击（分级，每级加快点击频率）
 const AI_TIERS = [
-  { level: 1, label: '基础AI助手', label_ja: '基本AIアシスト', label_en: 'Basic AI Assist',   emoji: '🤖', autoClickInterval: 5000, cost: 80000,
+  { level: 1, label: '基础AI助手', label_ja: '基本AIアシスト', label_en: 'Basic AI Assist', emoji: '🤖', autoClickInterval: 5000, cost: 80000,
     desc:    '每5秒自动敲一次代码。你还是需要在的。',
     desc_ja: '5秒ごとに自動でコードを書く。まだ君が必要。',
     desc_en: 'Auto-types code every 5s. Still needs you around.' },
-  { level: 2, label: '高级AI助手', label_ja: '上位AIアシスト', label_en: 'Pro AI Assist',   emoji: '🤖', autoClickInterval: 2000, cost: 800000,
+  { level: 2, label: '高级AI助手', label_ja: '上位AIアシスト', label_en: 'Pro AI Assist',  emoji: '🤖', autoClickInterval: 2000, cost: 800000,
     desc:    '每2秒。你开始怀疑自己存在的意义。',
     desc_ja: '2秒ごと。自分の存在意義を疑い始める。',
     desc_en: 'Every 2s. You start questioning your purpose.' },
-  { level: 3, label: 'AGI助手', label_ja: 'AGIアシスト', label_en: 'AGI Assist',      emoji: '🤖', autoClickInterval: 500,  cost: 5000000,
-    desc:    '你只是在看它工作。这就是社畜的终点站吗？',
-    desc_ja: 'ただ眺めているだけ。これが社畜の終着駅か？',
-    desc_en: 'You just watch it work. Is this the end of the line?' },
 ];
 
 // ── 自动化员工（可叠加购买）──────────────────────────────────
@@ -518,6 +516,7 @@ const AUTO_STAFF = [
     id: 'script', label: '自动脚本', label_ja: 'オートスクリプト', label_en: 'Auto-script', emoji: '🖱️',
     cost: 1000,
     clicksPerSec: 0.1,   // 廉价早期自动产出（Cookie Clicker Cursor 式）
+    maxCount: 20,        // 上限20个；升主任后从商店隐藏
     desc:    '你写的挂机脚本，自动敲点代码。便宜，前期就能挂上。',
     desc_ja: '放置スクリプト。勝手にコードを叩く。安くて序盤から回せる。',
     desc_en: 'An idle macro that types code for you. Cheap, runs from the start.',
@@ -557,7 +556,9 @@ const SHOP_ITEMS = [
     reply_ja: '生ビールと枝豆、居酒屋の基本セット。隣の会話は全然わからない、\nでも笑い声はわかる。それで十分。',
     reply_en: 'Draft beer + edamame. The izakaya starter pack. No idea what the next table is saying,\nbut laughter needs no translation. Good enough.', tone: 'good' },
 
-  { id: 'gohome', label: '回家睡一觉', label_ja: '家でぐっすり', label_en: 'Sleep at home', emoji: '🛏️', cost: 8000, cooldown: 0, changes: { energy: 100, health: 10 }, unlockNeed: { stat: 'energy', below: 70 },
+  { id: 'gohome', label: '回家睡一觉', label_ja: '家でぐっすり', label_en: 'Sleep at home', emoji: '🛏️', cost: 8000,
+    costFn: p => [8000, 20000, 50000, 100000, 200000][p.careerLevel ?? 0],
+    cooldown: 0, changes: { energy: 100, health: 10 }, unlockNeed: { stat: 'energy', below: 70 },
     desc: '体力全回，健康+10', desc_ja: '体力全回 健康+10', desc_en: 'Energy full restore · Health+10',
     reply:    '赶上末班车，倒在自己床上。明天继续，今晚先关机。\n这已经很好了。',
     reply_ja: '終電に間に合って自分のベッドに倒れ込む。明日もある、今夜はシャットダウン。\n十分すぎる。',
@@ -598,14 +599,14 @@ function pickMarketEvent(mkt = 1) {
 function clamp(v, lo = 0, hi = 100) { return Math.max(lo, Math.min(hi, v)); }
 function randMs(minMin, maxMin) { return (minMin + Math.random() * (maxMin - minMin)) * 60000; }
 function fmtMoney(n) {
-  if (n >= 1_000_000) return '¥' + (n / 1_000_000).toFixed(2) + 'M';
-  if (n >= 10_000)    return '¥' + (n / 1000).toFixed(1) + 'k';
+  if (n >= 1_000_000) return '¥' + parseFloat((n / 1_000_000).toFixed(2)) + 'M';
+  if (n >= 10_000)    return '¥' + parseFloat((n / 1000).toFixed(1)) + 'k';
   return '¥' + Math.floor(n);
 }
 // 动画专用：小数更细，让数字一直在跳
 function fmtMoneyLive(n) {
-  if (n >= 1_000_000) return '¥' + (n / 1_000_000).toFixed(3) + 'M';
-  if (n >= 10_000)    return '¥' + (n / 1000).toFixed(2) + 'k';
+  if (n >= 1_000_000) return '¥' + parseFloat((n / 1_000_000).toFixed(3)) + 'M';
+  if (n >= 10_000)    return '¥' + parseFloat((n / 1000).toFixed(2)) + 'k';
   return '¥' + Math.floor(n);
 }
 function tokyoTimeStr() {

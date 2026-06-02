@@ -313,6 +313,7 @@ const UI = (() => {
     const bondsInv    = INVESTMENTS.bonds;
     const bondsQty    = p.portfolio.bonds?.qty || 0;
     const bondsAfford = p.money >= bondsInv.price;
+    const bonds10Afford = p.money >= bondsInv.price * 10;
     const bondsItem   = `<div class="shop-item ${bondsAfford ? '' : 'locked'}">
       <div class="shop-item-header">
         <span>📜 ${tf(bondsInv, 'label')}</span>
@@ -321,7 +322,10 @@ const UI = (() => {
       <div class="shop-item-desc">${tf(bondsInv, 'desc')}</div>
       <div class="shop-item-footer">
         <span class="shop-yield neon-green">${fmtMoney(bondsInv.basePerSec)}/s ${t('inv.fixed')}</span>
-        <button class="shop-btn ${bondsAfford ? '' : 'disabled'}" data-key="bonds">${fmtMoney(bondsInv.price)}</button>
+        <div class="buy-btn-group">
+          <button class="shop-btn ${bondsAfford ? '' : 'disabled'}" data-key="bonds" data-qty="1">${fmtMoney(bondsInv.price)}</button>
+          <button class="shop-btn shop-btn-bulk ${bonds10Afford ? '' : 'disabled'}" data-key="bonds" data-qty="10">×10</button>
+        </div>
       </div>
     </div>`;
 
@@ -345,7 +349,10 @@ const UI = (() => {
       </div>
       <div class="shop-item-footer">
         <span class="shop-yield dim">${t('inv.risk')}</span>
-        <button class="shop-btn ${btcAfford ? '' : 'disabled'}" data-key="btc">${fmtMoney(btcMktPrice)}</button>
+        <div class="buy-btn-group">
+          <button class="shop-btn ${btcAfford ? '' : 'disabled'}" data-key="btc" data-qty="1">${fmtMoney(btcMktPrice)}</button>
+          <button class="shop-btn shop-btn-bulk ${p.money >= btcMktPrice * 10 ? '' : 'disabled'}" data-key="btc" data-qty="10">×10</button>
+        </div>
       </div>
     </div>`;
 
@@ -356,7 +363,7 @@ const UI = (() => {
     el.closest('.panel-section').style.display = (bondsShown || btcShown) ? '' : 'none';
     el.innerHTML = (bondsShown ? bondsItem : '') + (btcShown ? btcItem : '');
     el.querySelectorAll('.shop-btn:not(.disabled)').forEach(btn => {
-      btn.addEventListener('click', () => onBuy(btn.dataset.key));
+      btn.addEventListener('click', () => onBuy(btn.dataset.key, parseInt(btn.dataset.qty || '1')));
     });
   }
 
@@ -418,10 +425,12 @@ const UI = (() => {
       const def = AUTO_STAFF.find(s => s.id === id);
       if (!def || !shown) return '';
       const count  = p.autoStaff?.[id] || 0;
-      const maxed  = id === 'kohai' && count >= p.kohaiMax;
+      const scriptDef = AUTO_STAFF.find(s => s.id === id);
+      const maxed  = (id === 'kohai' && count >= p.kohaiMax) || (scriptDef?.maxCount && count >= scriptDef.maxCount);
       const price  = p.autoStaffPrice(id);
       const afford = !maxed && p.money >= price;
-      const cap    = id === 'kohai' ? `<span class="dim" style="font-size:10px">${count}/${p.kohaiMax}</span>` : `<span class="shop-count neon-cyan">×${count}</span>`;
+      const capLabel = id === 'kohai' ? `${count}/${p.kohaiMax}` : scriptDef?.maxCount ? `${count}/${scriptDef.maxCount}` : `×${count}`;
+      const cap    = `<span class="${id === 'kohai' ? 'dim' : 'shop-count neon-cyan'}" style="font-size:10px">${capLabel}</span>`;
       const btnLabel = maxed ? t('upgrade.maxed') : fmtMoney(price);
       return `<div class="shop-item ${(maxed || !afford) ? 'locked' : ''}">
         <div class="shop-item-header">
@@ -435,7 +444,11 @@ const UI = (() => {
         </div>
       </div>`;
     };
-    const scriptHtml = staffCard('script', (p.autoStaff?.script || 0) > 0 || p.isRevealed(p.autoStaffPrice('script')));
+    const scriptCount = p.autoStaff?.script || 0;
+    const scriptMaxed = scriptCount >= 20;
+    const scriptRetired = p.careerLevel >= 2 && scriptCount === 0; // 升主任前没买过就不再显示
+    const scriptHtml = staffCard('script',
+      !scriptRetired && (scriptCount > 0 || (!scriptMaxed && p.careerLevel < 2 && p.isRevealed(p.autoStaffPrice('script')))));
     const kohaiHtml  = staffCard('kohai', p.canApplyForKohai);
 
     el.closest('.panel-section').style.display = (tiersHtml || scriptHtml || kohaiHtml) ? '' : 'none';
@@ -460,7 +473,8 @@ const UI = (() => {
     });
     el.closest('.panel-section').style.display = items.length ? '' : 'none';
     el.innerHTML = items.map(item => {
-      const canAfford = p.money >= item.cost;
+      const price = item.costFn ? item.costFn(p) : item.cost;
+      const canAfford = p.money >= price;
       const onCooldown = !p.canUseShop(item.id, item.cooldown);
       const ch = item.changes || {};
       const statDepleted = (ch.energy    < 0 && p.energy    <= 0) ||
@@ -475,7 +489,7 @@ const UI = (() => {
         <div class="shop-item-desc">${tf(item, 'desc')}</div>
         <div class="shop-item-footer">
           <button class="shop-btn ${disabled ? 'disabled' : ''}" data-id="${item.id}">
-            ${item.cost === 0 ? t('shop.free') : fmtMoney(item.cost)}
+            ${price === 0 ? t('shop.free') : fmtMoney(price)}
           </button>
         </div>
       </div>`;
