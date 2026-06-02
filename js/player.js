@@ -15,6 +15,11 @@ class Player {
     this.sickUntil     = 0;       // 病倒结束时间戳（>now = 正在强制休息）
     this.collapseUntil = 0;       // 体力归零趴桌昏睡结束时间戳
     this.seenEvents    = [];      // 已见普通事件 key（全见完后重洗）
+    this.collapseCount = 0;       // 累计趴桌次数
+    this.shopUseCounts = {};      // 各生活消费使用次数
+    this.maxCombo      = 0;       // 历史最高连击数
+    this.btcPeak       = 1.0;    // BTC历史最高倍率
+    this.btcValley     = 1.0;    // BTC历史最低倍率
     this.minEnergy    = 100;      // 历史最低值（生活消费「按需求」解锁用，单调不增）
     this.minHealth    = 100;
     this.minHappiness = 100;
@@ -184,6 +189,7 @@ class Player {
       this.collapseUntil = now + (2 + Math.random() * 2) * 60000;
       collapseStarted = true;
       this.everCollapsed = true;
+      this.collapseCount = (this.collapseCount || 0) + 1;
     }
 
     this.peakMoney = Math.max(this.peakMoney || 0, this.money);  // 渐进解锁
@@ -234,6 +240,7 @@ class Player {
       this.comboCount++;
     }
     this.comboLastClick = now;
+    this.maxCombo = Math.max(this.maxCombo || 0, this.comboCount);
 
     const mult   = this.comboMult;
     const earned = Math.floor(this.clickValue * mult);
@@ -349,6 +356,8 @@ class Player {
     this.money -= item.cost;
     this.modify(item.changes);
     this.shopCooldowns[id] = Date.now();
+    this.shopUseCounts = this.shopUseCounts || {};
+    this.shopUseCounts[id] = (this.shopUseCounts[id] || 0) + 1;
     return true;
   }
 
@@ -428,6 +437,11 @@ class Player {
     if (p.everCollapsed  == null) p.everCollapsed  = false;
     if (p.everSick       == null) p.everSick       = false;
     if (!Array.isArray(p.seenEvents))   p.seenEvents   = [];
+    if (p.collapseCount  == null) p.collapseCount  = 0;
+    if (!p.shopUseCounts)         p.shopUseCounts  = {};
+    if (p.maxCombo       == null) p.maxCombo       = 0;
+    if (p.btcPeak        == null) p.btcPeak        = p.btcMarket || 1.0;
+    if (p.btcValley      == null) p.btcValley      = p.btcMarket || 1.0;
     p.lastTick = Date.now();
     return p;
   }
@@ -624,7 +638,23 @@ const ACHIEVEMENTS = [
   { id: 'invested',     emoji: '📈', label: '理财入门',   label_en: 'Investor',             label_ja: '投資家の卵',         desc: '购买第一支日本国债',      desc_en: 'Bought your first JGB bond',   desc_ja: '初めての国債購入' },
   { id: 'btc_holder',   emoji: '₿',  label: '数字资产',   label_en: 'HODL',                 label_ja: 'HODL',               desc: '购买比特币',              desc_en: 'Bought Bitcoin',               desc_ja: 'ビットコインを購入' },
   // 生存
-  { id: 'collapsed',    emoji: '💤', label: '社畜极限',   label_en: 'Burnout',              label_ja: '社畜の限界',         desc: '第一次体力耗尽趴桌',      desc_en: 'Collapsed at your desk',       desc_ja: '初めて机に倒れた' },
-  { id: 'got_sick',     emoji: '🤒', label: '职业病',     label_en: 'Occupational Hazard',  label_ja: '職業病',             desc: '第一次因健康透支病倒',    desc_en: 'Sick from overwork',           desc_ja: '初めて過労で倒れた' },
-  { id: 'first_fujoku', emoji: '🏩', label: '东京夜晚',   label_en: 'Tokyo Night',          label_ja: '東京の夜',           desc: '第一次去风俗店',          desc_en: 'Your first nightlife visit',   desc_ja: '初めて風俗店に行った' },
+  { id: 'collapsed',       emoji: '💤', label: '社畜极限',     label_en: 'Burnout',            label_ja: '社畜の限界',       desc: '第一次体力耗尽趴桌',           desc_en: 'Collapsed at your desk',          desc_ja: '初めて机に倒れた' },
+  { id: 'got_sick',        emoji: '🤒', label: '职业病',       label_en: 'Occupational Hazard',label_ja: '職業病',           desc: '第一次因健康透支病倒',         desc_en: 'Sick from overwork',              desc_ja: '初めて過労で倒れた' },
+  { id: 'first_fujoku',    emoji: '🏩', label: '东京夜晚',     label_en: 'Tokyo Night',        label_ja: '東京の夜',         desc: '第一次去风俗店',               desc_en: 'Your first nightlife visit',      desc_ja: '初めて風俗店に行った' },
+  // 在职里程碑
+  { id: 'day_100',         emoji: '💼', label: 'お疲れ様でした',label_en: 'Veteran',           label_ja: 'お疲れ様でした',   desc: '在职满100天',                  desc_en: '100 days on the job',             desc_ja: '在職100日達成' },
+  { id: 'promoted_3',      emoji: '📁', label: '係長になった', label_en: 'Section Chief',      label_ja: '係長になった',     desc: '晋升至係長',                   desc_en: 'Promoted to section chief',       desc_ja: '係長に昇格' },
+  { id: 'promoted_4',      emoji: '🏢', label: '課長になった', label_en: 'Department Head',    label_ja: '課長になった',     desc: '晋升至課長',                   desc_en: 'Promoted to department head',     desc_ja: '課長に昇格' },
+  // 装备 & 自动化
+  { id: 'full_gear',       emoji: '✅', label: 'LGTM',         label_en: 'LGTM',               label_ja: 'LGTM',             desc: '购齐全套人体工学装备',         desc_en: 'Full ergonomic setup unlocked',   desc_ja: '人間工学フルセット完備' },
+  { id: 'full_auto',       emoji: '⚡', label: '全自动化',     label_en: 'Full Auto',          label_ja: '全自動化',         desc: '同时拥有AI、脚本和後輩',       desc_en: 'AI + script + junior all active', desc_ja: 'AI・スクリプト・後輩全保有' },
+  // 行为梗
+  { id: 'triple_collapse', emoji: '🛋️', label: '躺平三连',     label_en: 'Triple Burnout',     label_ja: '三連倒れ',         desc: '趴桌三次',                     desc_en: 'Collapsed at your desk 3 times',  desc_ja: '机に三回倒れた' },
+  { id: 'rest_master',     emoji: '🐟', label: '摸鱼达人',     label_en: 'Slack Master',       label_ja: '怠け者の達人',     desc: '工位趴了5次',                  desc_en: 'Desk napped 5 times',             desc_ja: 'デスク仮眠5回' },
+  { id: 'ramen_lover',     emoji: '🍜', label: '孤独的美食家', label_en: 'Solo Gourmet',       label_ja: '孤独のグルメ',     desc: '独自吃了5次拉面',              desc_en: 'Ate ramen alone 5 times',         desc_ja: '一人でラーメン5回' },
+  { id: 'max_combo',       emoji: '🔥', label: '内卷冠军',     label_en: 'Grind King',         label_ja: '内巻き王',         desc: '达到最高连击倍率（×2.0）',    desc_en: 'Reached max combo ×2.0',          desc_ja: '最大コンボ倍率×2.0達成' },
+  // 财务梗
+  { id: 'cash_rich',       emoji: '💴', label: '现金为王',     label_en: 'Cash is King',       label_ja: '現金は王様',       desc: '手持余额达到¥10,000,000',      desc_en: 'Balance reached ¥10,000,000',     desc_ja: '残高¥1000万達成' },
+  { id: 'btc_moon',        emoji: '🚀', label: 'To the Moon',  label_en: 'To the Moon',        label_ja: 'To the Moon',      desc: 'BTC涨到历史最高5倍',           desc_en: 'BTC peaked at 5× original price', desc_ja: 'BTCが最高値5倍に達した' },
+  { id: 'btc_zero',        emoji: '💀', label: '归零了',       label_en: 'Rekt',               label_ja: '帰零',             desc: '亲历BTC崩盘至5%以下',          desc_en: 'Watched BTC crash to near zero',  desc_ja: 'BTCが5%以下に暴落' },
 ];

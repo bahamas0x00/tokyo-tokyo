@@ -33,9 +33,9 @@ const Game = (() => {
     },
     {
       isStory: true, storyTitle: '她的LINE', storyTitle_en: 'Her LINE', storyTitle_ja: '彼女のLINE', storyEmoji: '💬',
-      text: '出门前你问她能不能加LINE。\n她把二维码给你扫了。\n\n此后偶尔会有消息。\n"下周四有出勤哦～"  一个笑脸。\n\n她在演戏。你当真了。\n你知道你当真了。\n你没有办法。',
-      text_en: 'Before you left you asked if you could add her on LINE.\nShe let you scan her QR code.\n\nOccasionally a message after that.\n"I\'m working Thursday~" A smiley face.\n\nShe\'s acting. You took it seriously.\nYou know you took it seriously.\nYou couldn\'t help it.',
-      text_ja: '帰り際にLINEを交換してもいいか聞いた。\n彼女がQRコードを見せてくれた。\n\nその後、たまにメッセージが来る。\n「来週木曜、出勤してますよ〜」笑顔の絵文字。\n\n彼女は演じている。あなたは本気にした。\n本気にしてるってわかってる。\nどうしようもない。',
+      text: '出门前你问她能不能加LINE。\n她犹豫了一下，说当然可以。\n\n此后偶尔会有消息。\n"下周四有出勤哦～"  一个笑脸。\n\n她在演戏。你当真了。\n你知道你当真了。\n你没有办法。',
+      text_en: 'Before you left you asked if you could add her on LINE.\nShe hesitated, then said of course.\n\nOccasionally a message after that.\n"I\'m working Thursday~" A smiley face.\n\nShe\'s acting. You took it seriously.\nYou know you took it seriously.\nYou couldn\'t help it.',
+      text_ja: '帰り際にLINEを交換してもいいか聞いた。\n彼女は少し躊躇してから、もちろんいいですよ、と言った。\n\nその後、たまにメッセージが来る。\n「来週木曜、出勤してますよ〜」笑顔の絵文字。\n\n彼女は演じている。あなたは本気にした。\n本気にしてるってわかってる。\nどうしようもない。',
       choices: [
         { label: '回复了一个笑脸', label_en: 'You replied with a smile', label_ja: '笑顔で返信した', reply: '她秒回了一个"✨"。\n你看着这个符号很久。', reply_en: 'She instantly replied with "✨".\nYou stared at that symbol for a long time.', reply_ja: '即座に「✨」が返ってきた。\nその絵文字をしばらく見つめてしまった。', changes: { happiness: -5 }, tone: 'neutral' },
         { label: '没有回复，把手机放下', label_en: 'No reply. You put your phone down.', label_ja: '返信せず、スマホを置いた', reply: '你知道有些事看清楚了就别再看了。\n你还是留着那条LINE。', reply_en: 'You know that some things, once you\'ve seen them clearly, you should stop looking at.\nYou kept the LINE anyway.', reply_ja: '見えてしまったものは、もう見ない方がいいとわかってる。\nそれでもLINEは残しておいた。', changes: { happiness: -10 }, tone: 'bad' },
@@ -497,9 +497,21 @@ const Game = (() => {
     got_script:   p => (p.autoStaff?.script || 0) >= 1,
     invested:     p => (p.portfolio?.bonds?.qty || 0) >= 1,
     btc_holder:   p => (p.portfolio?.btc?.qty   || 0) >= 1,
-    collapsed:    p => p.everCollapsed === true,
-    got_sick:     p => p.everSick      === true,
-    first_fujoku: p => (p.fujokuVisits || 0) >= 1,
+    collapsed:       p => p.everCollapsed === true,
+    got_sick:        p => p.everSick      === true,
+    first_fujoku:    p => (p.fujokuVisits || 0) >= 1,
+    day_100:         p => p.day >= 100,
+    promoted_3:      p => p.careerLevel >= 3,
+    promoted_4:      p => p.careerLevel >= 4,
+    full_gear:       p => (p.tierLevels?.keyboard || 0) >= 1 && (p.tierLevels?.monitor || 0) >= 1 && (p.tierLevels?.chair || 0) >= 1,
+    full_auto:       p => (p.tierLevels?.ai || 0) >= 1 && (p.autoStaff?.script || 0) >= 1 && (p.autoStaff?.kohai || 0) >= 1,
+    triple_collapse: p => (p.collapseCount || 0) >= 3,
+    rest_master:     p => (p.shopUseCounts?.rest  || 0) >= 5,
+    ramen_lover:     p => (p.shopUseCounts?.ramen || 0) >= 5,
+    max_combo:       p => (p.maxCombo || 0) >= 30,
+    cash_rich:       p => p.money >= 10_000_000,
+    btc_moon:        p => (p.btcPeak   || 1) >= 5.0,
+    btc_zero:        p => (p.btcValley || 1) <= 0.05,
   };
 
   function checkAchievements() {
@@ -561,6 +573,8 @@ const Game = (() => {
     const ev = pickMarketEvent(player.btcMarket);
     const prev = player.btcMarket;
     player.btcMarket = clamp2(prev * ev.mult, 0.02, 10.0);
+    player.btcPeak   = Math.max(player.btcPeak   || 1, player.btcMarket);
+    player.btcValley = Math.min(player.btcValley || 1, player.btcMarket);
 
     // 只在投资面板已解锁（设备齐全）时才显示行情新闻
     if (!player.gearComplete) return;
