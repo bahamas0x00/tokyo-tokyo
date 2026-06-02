@@ -247,15 +247,13 @@ git push --force</div>
           </div>
         </div>
 
-        <div class="click-total px" style="font-size:8px;flex-shrink:0">
-          TOTAL: <span id="val-total" class="neon-gold">¥0</span>
-        </div>
-
         <!-- 事件弹窗 -->
         <div id="event-popup" class="event-popup hidden">
+          <div id="popup-countdown" class="event-countdown"></div>
           <div class="event-popup-tag" id="popup-tag" data-i18n="popup.tag">── 突发事件 ──</div>
           <div class="event-popup-text" id="popup-text"></div>
           <div class="event-popup-choices" id="popup-choices"></div>
+          <div class="event-popup-result hidden" id="popup-result"></div>
         </div>
 
         <!-- 市场新闻滚动 -->
@@ -283,6 +281,11 @@ git push --force</div>
         <div class="panel-section">
           <div class="panel-title" data-i18n="panel.life">── 生 活 消 费 ──</div>
           <div id="life-shop"></div>
+        </div>
+
+        <div class="panel-section" style="display:none">
+          <div class="panel-title" data-i18n="panel.achievements">── 成 就 ──</div>
+          <div id="achievement-display"></div>
         </div>
       </aside>
 

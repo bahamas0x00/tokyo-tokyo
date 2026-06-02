@@ -1,6 +1,7 @@
 'use strict';
 const UI = (() => {
   let _prevStats = null;  // 上次的属性值，用于「数值突变」提示
+  let _eventTimer = null; // 突发事件自动消失计时器
 
   // ── 金钱动画计数器（rAF 平滑追尾）──────────────────────────
   let _animMoney = 0;
@@ -40,7 +41,6 @@ const UI = (() => {
     setText('hdr-day',        p.day);
     setText('hdr-clock',      tokyoTimeStr());
     // val-money 由 startMoneyAnim rAF 动画接管，这里不再直接写
-    setText('val-total',      fmtMoney(p.totalEarned));
     setText('val-click',      '¥' + p.clickValue);
     setText('val-passive',    fmtMoney(p.totalPerSec) + '/s');  // 总收入=投资+自动化
     setText('val-click-rate', '¥' + p.clickValue + '/CLICK');
@@ -332,7 +332,8 @@ const UI = (() => {
     const pct       = ((m - 1) * 100).toFixed(0);
     const sign      = m >= 1 ? '+' : '';
     const mCls      = m >= 1 ? 'neon-green' : 'neon-pink';
-    const btcAfford = p.money >= btcInv.price;
+    const btcMktPrice = Math.round(btcInv.price * m);
+    const btcAfford = p.money >= btcMktPrice;
     const btcPerSec = btcInv.basePerSec * m;
     const btcItem   = `<div class="shop-item ${btcAfford ? '' : 'locked'}">
       <div class="shop-item-header">
@@ -344,7 +345,7 @@ const UI = (() => {
       </div>
       <div class="shop-item-footer">
         <span class="shop-yield dim">${t('inv.risk')}</span>
-        <button class="shop-btn ${btcAfford ? '' : 'disabled'}" data-key="btc">${fmtMoney(btcInv.price)}</button>
+        <button class="shop-btn ${btcAfford ? '' : 'disabled'}" data-key="btc">${fmtMoney(btcMktPrice)}</button>
       </div>
     </div>`;
 
@@ -461,7 +462,11 @@ const UI = (() => {
     el.innerHTML = items.map(item => {
       const canAfford = p.money >= item.cost;
       const onCooldown = !p.canUseShop(item.id, item.cooldown);
-      const disabled  = !canAfford || onCooldown;
+      const ch = item.changes || {};
+      const statDepleted = (ch.energy    < 0 && p.energy    <= 0) ||
+                           (ch.health    < 0 && p.health    <= 0) ||
+                           (ch.happiness < 0 && p.happiness <= 0);
+      const disabled  = !canAfford || onCooldown || statDepleted;
       const cooldownLabel = onCooldown ? t('shop.cooldown') : '';
       return `<div class="shop-item ${disabled ? 'locked' : ''}">
         <div class="shop-item-header">
@@ -482,37 +487,91 @@ const UI = (() => {
 
   // ── event popup ────────────────────────────────────────────
   let _tw = null;
+  function fmtChanges(changes) {
+    if (!changes) return '';
+    const parts = [];
+    if (changes.money)     parts.push((changes.money > 0 ? '+' : '') + fmtMoney(changes.money));
+    if (changes.energy)    parts.push((changes.energy > 0 ? '⚡+' : '⚡') + changes.energy);
+    if (changes.health)    parts.push((changes.health > 0 ? '💚+' : '💔') + changes.health);
+    if (changes.happiness) parts.push((changes.happiness > 0 ? '😊+' : '😞') + changes.happiness);
+    return parts.join('　');
+  }
+
+  const EVENT_TIMEOUT = 30000;
+
+  function _slideOutPopup(popup) {
+    popup.classList.remove('show');
+    setTimeout(() => popup.classList.add('hidden'), 380);
+  }
+
   function showEventPopup(event, onChoice) {
-    const popup = document.getElementById('event-popup');
-    const textEl = document.getElementById('popup-text');
-    const choicesEl = document.getElementById('popup-choices');
-    popup.classList.remove('hidden');
+    const popup      = document.getElementById('event-popup');
+    const countdown  = document.getElementById('popup-countdown');
+    const textEl     = document.getElementById('popup-text');
+    const choicesEl  = document.getElementById('popup-choices');
+    const resultEl   = document.getElementById('popup-result');
+
+    // 重置
+    clearTimeout(_eventTimer);
     choicesEl.innerHTML = '';
-    typewrite(textEl, event.text, 20, () => {
-      const choices = event.choices && event.choices.length ? event.choices
-        : [{ label: t('choice.continue'), reply: '', changes: {}, tone: 'neutral' }];
+    resultEl.classList.add('hidden');
+    resultEl.textContent = '';
+    countdown.classList.remove('depleting');
+    countdown.style.transition = 'none';
+    countdown.style.width = '100%';
+
+    // 滑入
+    popup.classList.remove('hidden');
+    requestAnimationFrame(() => requestAnimationFrame(() => popup.classList.add('show')));
+
+    const choices = event.choices && event.choices.length ? event.choices
+      : [{ label: t('choice.continue'), reply: '', changes: {}, tone: 'neutral' }];
+
+    function commitChoice(c) {
+      clearTimeout(_eventTimer);
+      choicesEl.innerHTML = '';
+      countdown.style.transition = 'none';
+      countdown.style.width = '0%';
+      const changesStr = fmtChanges(c.changes);
+      const finish = () => {
+        if (changesStr) {
+          resultEl.textContent = changesStr;
+          resultEl.className = 'event-popup-result ' + (c.tone || 'neutral');
+          resultEl.classList.remove('hidden');
+        }
+        setTimeout(() => { _slideOutPopup(popup); resultEl.classList.add('hidden'); onChoice(c); }, 900);
+      };
+      if (c.reply) typewrite(textEl, c.reply, 18, finish);
+      else finish();
+    }
+
+    typewrite(textEl, event.text, 15, () => {
       choices.forEach(c => {
         const btn = document.createElement('button');
         btn.className = 'choice-btn';
         btn.textContent = c.label;
-        btn.addEventListener('click', () => {
-          choicesEl.innerHTML = '';
-          if (c.reply) {
-            typewrite(textEl, c.reply, 20, () => {
-              setTimeout(() => { popup.classList.add('hidden'); onChoice(c); }, 1200);
-            });
-          } else {
-            popup.classList.add('hidden');
-            onChoice(c);
-          }
-        });
+        btn.addEventListener('click', () => commitChoice(c));
         choicesEl.appendChild(btn);
       });
+
+      // 倒计时条启动
+      requestAnimationFrame(() => requestAnimationFrame(() => {
+        countdown.style.transition = `width ${EVENT_TIMEOUT}ms linear`;
+        countdown.classList.add('depleting');
+      }));
+
+      // 超时自动选第一项
+      _eventTimer = setTimeout(() => {
+        const def = choices.find(c => c.tone === 'neutral') || choices[0];
+        commitChoice(def);
+      }, EVENT_TIMEOUT);
     });
   }
 
   function hideEventPopup() {
-    document.getElementById('event-popup').classList.add('hidden');
+    clearTimeout(_eventTimer);
+    const popup = document.getElementById('event-popup');
+    _slideOutPopup(popup);
   }
 
   function typewrite(el, text, speed = 20, onDone) {
@@ -676,9 +735,42 @@ const UI = (() => {
     if (badge) badge.classList.add('hidden');
   }
 
+  function renderAchievements(p) {
+    const el = document.getElementById('achievement-display');
+    if (!el) return;
+    const unlocked = p.achievements || [];
+    const section  = el.closest('.panel-section');
+    if (!unlocked.length) { section.style.display = 'none'; return; }
+    section.style.display = '';
+    el.innerHTML = `
+      <div class="ach-count dim" style="font-size:12px;text-align:right;margin-bottom:4px">${unlocked.length} / ${ACHIEVEMENTS.length}</div>
+      <div class="achievement-grid">
+        ${ACHIEVEMENTS.filter(a => unlocked.includes(a.id)).map(a => `
+          <div class="achievement-tile" data-tip="${tf(a,'desc')}">
+            <span class="ach-emoji">${a.emoji}</span>
+            <span class="ach-label">${tf(a,'label')}</span>
+          </div>`).join('')}
+      </div>`;
+
+    document.querySelectorAll('.ach-tooltip').forEach(t => t.remove());
+    let _achTip = null;
+    el.querySelectorAll('.achievement-tile').forEach(tile => {
+      tile.addEventListener('mouseenter', () => {
+        _achTip = document.createElement('div');
+        _achTip.className = 'ach-tooltip';
+        _achTip.textContent = tile.dataset.tip;
+        document.body.appendChild(_achTip);
+        const r = tile.getBoundingClientRect();
+        _achTip.style.left = Math.max(4, r.left + r.width / 2 - _achTip.offsetWidth / 2) + 'px';
+        _achTip.style.top  = (r.top - _achTip.offsetHeight - 6) + 'px';
+      });
+      tile.addEventListener('mouseleave', () => { _achTip?.remove(); _achTip = null; });
+    });
+  }
+
   return {
     show, updateStats, updateClock, startMoneyAnim,
-    renderAutoShop, renderInvestShop, renderUpgradeShop, renderLifeShop,
+    renderAutoShop, renderInvestShop, renderUpgradeShop, renderLifeShop, renderAchievements,
     showEventPopup, hideEventPopup,
     spawnFloat, spawnAutoFloat, showMarketNews, appendLog, toast,
     showStoryBadge, showStories,

@@ -16,10 +16,20 @@ const Game = (() => {
     },
     {
       isStory: true, storyTitle: '电梯里的她（二）', storyTitle_en: 'Her in the Elevator (II)', storyTitle_ja: 'エレベーターの彼女（二）', storyEmoji: '🏩',
-      text: '洗完澡，她没有说话，\n只是侧躺过来，把头靠在你旁边。\n\n像一只猫。\n\n你低下头，吻了她。\n是真的吻，不是那种。\n她没有躲。',
+      text: '洗完澡，她没有说话，\n只是侧躺过来，把头靠在你旁边。\n\n像一只猫。\n\n你低下头，吻了她。\n她没有躲。',
       text_en: 'After the bath she didn\'t say anything.\nShe just rolled over and rested her head next to yours.\n\nLike a cat.\n\nYou leaned down and kissed her.\nA real kiss. Not that kind.\nShe didn\'t pull away.',
       text_ja: 'お風呂の後、彼女は何も言わなかった。\nただ横になって、あなたの隣に頭をもたせかけた。\n\n猫みたいに。\n\nあなたは顔を近づけてキスした。\n本物のキス。そういう意味じゃない方の。\n彼女は避けなかった。',
-      choices: [{ label: '什么都没说', label_en: 'You say nothing', label_ja: '何も言わなかった', reply: '这是你来东京以来第一次觉得不孤独。\n你知道这不是真的。\n但今晚不想在意这些。', reply_en: 'This is the first time since coming to Tokyo that you haven\'t felt alone.\nYou know it\'s not real.\nBut tonight you don\'t want to think about that.', reply_ja: '東京に来てから初めて、孤独じゃないと感じた。\n本物じゃないってわかってる。\nでも今夜はそんなこと考えたくない。', changes: { happiness: 15 }, tone: 'good' }],
+      choices: [{ label: '什么都没说', label_en: 'You say nothing', label_ja: '何も言わなかった', reply: '不管三七二十一。\n今晚就这样，明天再说。', reply_en: 'Whatever. Figure it out tomorrow.\nTonight\'s tonight.', reply_ja: 'まあいいか。\n明日のことは明日考える。', changes: { happiness: 15 }, tone: 'good' }],
+    },
+    {
+      isStory: true, storyTitle: '银座，下午三点', storyTitle_en: 'Ginza, 3pm', storyTitle_ja: '銀座、午後三時', storyEmoji: '🛍️',
+      text: '完事后，你躺在床上抽烟。\n她问你明天周日休息要做什么。\n你说想去逛逛街，买点衣服，问她要不要一起。\n\n她愣了一下。\n"那你会给我买吗？"\n\n你想也没想。\n"当然。"\n\n沉默了两秒。\n"那明天下午三点，银座见。"',
+      text_en: 'Afterwards, you lay in bed, smoking.\nShe asked what you were doing tomorrow — Sunday.\nYou said you were going to walk around, buy some clothes. Asked if she wanted to come.\n\nShe paused.\n"Would you buy something for me?"\n\nYou didn\'t even think.\n"Of course."\n\nTwo seconds of silence.\n"Tomorrow. 3pm. Ginza."',
+      text_ja: '終わった後、ベッドに寝転んでタバコを吸っていた。\n彼女が聞いた。明日日曜、何するの？\n買い物でもしようかと思ってると言ったら、一緒に行く？と聞いた。\n\n彼女がちょっと固まった。\n「じゃあ、買ってくれる？」\n\n考える間もなかった。\n「もちろん。」\n\n二秒の沈黙。\n「じゃあ明日の午後三時、銀座で。」',
+      choices: [
+        { label: '准时出现在银座', label_en: 'You show up at Ginza', label_ja: '時間通りに銀座に現れた', reply: '银座的阳光很好。\n她穿着普通衣服站在约定地点，看见你时有点不自然地笑了。\n你们走进了第一家店。\n她没有再提昨晚的事，你也没有。', reply_en: 'The light in Ginza was nice.\nShe was already there in plain clothes, smiled a little awkwardly when she saw you.\nYou walked into the first store together.\nNeither of you mentioned last night.', reply_ja: '銀座の日差しは良かった。\n彼女は私服で待っていて、あなたを見てちょっとぎこちなく笑った。\n二人で最初の店に入った。\n昨晩のことは、どちらも触れなかった。', changes: { money: -20000, happiness: 25 }, tone: 'good' },
+        { label: '想了一夜，没去', label_en: 'You thought all night. Didn\'t go.', label_ja: '一晩考えて、行かなかった', reply: '下午三点，她发来一个问号。\n你盯着那个问号很久。\n最后你出门，一个人去买了衣服。\n你没有回她的消息。', reply_en: 'At 3pm she sent a question mark.\nYou stared at it for a long time.\nYou went out alone and bought the clothes.\nYou never replied.', reply_ja: '午後三時、「？」とメッセージが届いた。\nしばらくそれを見つめていた。\n一人で出かけて、服を買った。\n返信はしなかった。', changes: { happiness: -15 }, tone: 'bad' },
+      ],
     },
     {
       isStory: true, storyTitle: '她的LINE', storyTitle_en: 'Her LINE', storyTitle_ja: '彼女のLINE', storyEmoji: '💬',
@@ -103,11 +113,22 @@ const Game = (() => {
     UI.updateStats(player);
     UI.startMoneyAnim(() => player);  // rAF 金钱动画计数器
     renderShops();
+    UI.renderAchievements(player);
     startLoop();
     bindGameButtons();
+    bindCollapsible();
 
     // pixel office click area
     document.getElementById('btn-click').addEventListener('click', handleClick);
+  }
+
+  function bindCollapsible() {
+    document.querySelectorAll('.right-panel .panel-title').forEach(title => {
+      if (title._collapsibleBound) return;
+      title._collapsibleBound = true;
+      title.classList.add('panel-title--collapsible');
+      title.addEventListener('click', () => title.closest('.panel-section').classList.toggle('collapsed'));
+    });
   }
 
   function bindGameButtons() {
@@ -204,13 +225,30 @@ const Game = (() => {
   }
 
   // ── main loop ─────────────────────────────────────────────
+  let _wasCollapsed = false;
+  let _lastEnergyZone = 3;
+  function energyZone(e) { return e > 60 ? 3 : e > 40 ? 2 : e > 20 ? 1 : 0; }
   function startLoop() {
     // tick every second
     setInterval(() => {
-      const { autoClicks, sickStarted, reviewDue } = player.tick() || {};
+      const { autoClicks, sickStarted, reviewDue, collapseStarted } = player.tick() || {};
       if (autoClicks > 0) UI.spawnAutoFloat(player.clickValue, autoClicks);
-      if (sickStarted) { UI.appendLog(t('log.sick'), 'bad'); UI.toast(t('toast.sick'), 2600); }
+      if (sickStarted)     { UI.appendLog(t('log.sick'),      'bad'); UI.toast(t('toast.sick'),     2600); }
+      if (collapseStarted) { UI.appendLog(t('log.collapse'),  'bad'); UI.toast(t('toast.collapse'), 2600); }
+      if (_wasCollapsed && !player.isCollapsed) {
+        UI.toast(t('toast.collapse_wake'), 2200);
+      }
+      _wasCollapsed = player.isCollapsed;
       if (reviewDue != null) triggerReview(reviewDue);
+      checkAchievements();
+      // 能量警告最后发 toast，不会被成就等覆盖
+      const curZone = energyZone(player.energy);
+      if (curZone < _lastEnergyZone) {
+        if (curZone === 2) UI.toast(t('toast.energy_warn_2'), 2200);
+        if (curZone === 1) UI.toast(t('toast.energy_warn_1'), 2200);
+        if (curZone === 0) { UI.toast(t('toast.energy_warn_0'), 3000); UI.appendLog(t('log.energy_warn_0'), 'bad'); }
+      }
+      _lastEnergyZone = curZone;
       UI.updateStats(player);
       renderShops();
       checkEvent();
@@ -229,8 +267,9 @@ const Game = (() => {
   let _comboHideTimer = null;
 
   function handleClick() {
-    if (player.isSick)      { UI.toast(t('toast.sick_resting')); return; }
-    if (player.energy < 1)  { UI.toast(t('toast.energy_low')); return; }
+    if (player.isSick)       { UI.toast(t('toast.sick_resting'));     return; }
+    if (player.isCollapsed)  { UI.toast(t('toast.collapse_resting')); return; }
+    if (player.energy < 1)   { UI.toast(t('toast.energy_low'));       return; }
     const { value, combo, mult } = player.click();
     UI.spawnFloat(value, mult > 1.0);
 
@@ -239,14 +278,14 @@ const Game = (() => {
     if (comboEl) {
       comboEl.style.display = combo >= 5 ? '' : 'none';
       if (combo >= 5) {
-        const lv = mult >= 3 ? 'lv3' : mult >= 2 ? 'lv2' : 'lv1';
+        const lv = mult >= 2 ? 'lv3' : mult >= 1.5 ? 'lv2' : 'lv1';
         comboEl.className = 'combo-display ' + lv;
         comboEl.textContent = `×${mult.toFixed(1)} ${combo}連`;
       }
       // 阈值首次触达时飘特效文字
-      if (combo === 5)  UI.spawnFloat('集中力 ×1.5', true);
-      if (combo === 15) UI.spawnFloat('入状態！×2.0', true);
-      if (combo === 30) UI.spawnFloat('🔥 燃焼 ×3.0', true);
+      if (combo === 5)  UI.spawnFloat('集中力 ×1.2', true);
+      if (combo === 15) UI.spawnFloat('入状態！×1.5', true);
+      if (combo === 30) UI.spawnFloat('🔥 燃焼 ×2.0', true);
       // 3秒无点击后隐藏
       clearTimeout(_comboHideTimer);
       _comboHideTimer = setTimeout(() => {
@@ -333,7 +372,7 @@ const Game = (() => {
       renderShops();
       save();
       // 工位趴一会有风险被上司逮到
-      if (id === 'rest' && Math.random() < 0.25) bossCatch();
+      if (id === 'rest' && Math.random() < 0.50) bossCatch();
     });
   }
 
@@ -352,11 +391,43 @@ const Game = (() => {
       if (choice._fine) {
         player.money = Math.max(0, player.money - choice._fine);
         player.happiness = clamp(player.happiness - 8, 0, 100);
+        UI.toast(t('boss.catch.fine_penalty', { fine: fmtMoney(choice._fine) }), 2200);
       } else {
-        player.happiness = clamp(player.happiness - 15, 0, 100);
-        player.health    = clamp(player.health    - 5,  0, 100);
+        player.warnCount = (player.warnCount || 0) + 1;
+        const wc = player.warnCount;
+        const hpLoss  = wc >= 2 ? 20 : 15;
+        const hltLoss = wc >= 2 ? 10 : 5;
+        player.happiness = clamp(player.happiness - hpLoss,  0, 100);
+        player.health    = clamp(player.health    - hltLoss, 0, 100);
+        UI.toast(t('boss.catch.c2_penalty', { n: wc, hp: hpLoss, hlt: hltLoss }), 2500);
+        if (wc >= 3) {
+          // 第三次：HR 约谈
+          setTimeout(() => triggerHRWarning(), 800);
+        }
       }
       UI.appendLog(t('boss.catch.log'), 'bad');
+      UI.updateStats(player);
+      renderShops();
+      save();
+      eventActive = false;
+    });
+  }
+
+  // ── HR 约谈（嘴硬警告累计 3 次触发）────────────────────────
+  function triggerHRWarning() {
+    if (eventActive) return;
+    eventActive = true;
+    UI.showEventPopup({
+      text: t('hr.warn.text'),
+      choices: [
+        { label: t('hr.warn.c1'), reply: t('hr.warn.c1r'), tone: 'bad', _hrwarn: true },
+      ],
+    }, choice => {
+      player.happiness = clamp(player.happiness - 30, 0, 100);
+      player.health    = clamp(player.health    - 20, 0, 100);
+      player.warnCount = 0;
+      UI.appendLog(t('hr.warn.log'), 'bad');
+      UI.toast(t('hr.warn.penalty'), 2500);
       UI.updateStats(player);
       renderShops();
       save();
@@ -368,18 +439,35 @@ const Game = (() => {
   function buyFujoku() {
     const item = SHOP_ITEMS.find(s => s.id === 'fujoku');
     if (!player.canAfford(item.cost)) { UI.toast(t('toast.no_fund')); return; }
+    if (player.energy < 20) { UI.toast(t('toast.energy_low')); return; }
     player.money    -= item.cost;
-    player.happiness = clamp(player.happiness + 40, 0, 100);
-    player.health    = clamp(player.health    - 3,  0, 100);
+    player.happiness = clamp(player.happiness + 15, 0, 100);
+    player.health    = clamp(player.health    - 12, 0, 100);
+    player.energy    = clamp(player.energy    - 60, 0, 100);
 
-    const story = localizeEvent(FUJOKU_STORIES[fujokuVisits % FUJOKU_STORIES.length]);
+    const storyIndex = fujokuVisits;
     fujokuVisits++;
     player.fujokuVisits = fujokuVisits;
+
+    // 物語已讲完，后续只显示普通短事件
+    const lang = getLang();
+    const pick = (zh, en, ja) => lang === 'en' ? en : lang === 'ja' ? ja : zh;
+    const story = storyIndex < FUJOKU_STORIES.length
+      ? localizeEvent(FUJOKU_STORIES[storyIndex])
+      : {
+          isStory: false,
+          text: pick('花了¥35,000。\n你告诉自己这是最后一次。\n你上次也是这么说的。',
+                     'Spent ¥35,000.\nYou told yourself this was the last time.\nYou said that last time too.',
+                     '¥35,000使った。\nもう最後にしようと自分に言い聞かせた。\n前回もそう言っていた。'),
+          choices: [{ label: pick('又来了', 'Again', 'また来た'),
+                      reply: pick('又是普通的一夜。', 'Just another night.', 'また普通の夜が過ぎた。'),
+                      changes: {}, tone: 'neutral' }],
+        };
 
     eventActive = true;
     UI.showEventPopup(story, choice => {
       player.modify(choice.changes || {});
-      if (story.isStory) {
+      if (story.isStory && storyIndex < FUJOKU_STORIES.length) {
         player.addStory({ title: story.storyTitle, emoji: story.storyEmoji, text: story.text, reply: choice.reply || '', tone: choice.tone });
         UI.showStoryBadge(player.storyLog.length);
       }
@@ -392,17 +480,63 @@ const Game = (() => {
     });
   }
 
+  // ── 成就检测 ─────────────────────────────────────────────
+  const ACHIEVEMENT_CONDITIONS = {
+    earn_10k:     p => p.totalEarned >= 10_000,
+    earn_100k:    p => p.totalEarned >= 100_000,
+    earn_1m:      p => p.totalEarned >= 1_000_000,
+    earn_10m:     p => p.totalEarned >= 10_000_000,
+    earn_100m:    p => p.totalEarned >= 100_000_000,
+    got_keyboard: p => (p.tierLevels?.keyboard || 0) >= 1,
+    got_monitor:  p => (p.tierLevels?.monitor  || 0) >= 1,
+    got_chair:    p => (p.tierLevels?.chair    || 0) >= 1,
+    got_ai:       p => (p.tierLevels?.ai       || 0) >= 1,
+    promoted_1:   p => p.careerLevel >= 1,
+    promoted_2:   p => p.careerLevel >= 2,
+    got_kohai:    p => (p.autoStaff?.kohai  || 0) >= 1,
+    got_script:   p => (p.autoStaff?.script || 0) >= 1,
+    invested:     p => (p.portfolio?.bonds?.qty || 0) >= 1,
+    btc_holder:   p => (p.portfolio?.btc?.qty   || 0) >= 1,
+    collapsed:    p => p.everCollapsed === true,
+    got_sick:     p => p.everSick      === true,
+    first_fujoku: p => (p.fujokuVisits || 0) >= 1,
+  };
+
+  function checkAchievements() {
+    for (const ach of ACHIEVEMENTS) {
+      const cond = ACHIEVEMENT_CONDITIONS[ach.id];
+      if (!cond) continue;
+      if (!cond(player)) continue;
+      if (!player.unlockAchievement(ach.id)) continue;
+      // 新解锁
+      const name = tf(ach, 'label');
+      UI.toast(`🏆 ${name}`, 2600);
+      UI.appendLog(`🏆 ${name} — ${tf(ach, 'desc')}`, 'good');
+      UI.renderAchievements(player);
+    }
+  }
+
   // ── 随机事件 ─────────────────────────────────────────────
   function checkEvent() {
     if (eventActive) return;
     if (Date.now() < player.nextEventAt) return;
     eventActive = true;
-    const event = getRandomEvent();
+    const seenStoryKeys = new Set((player.storyLog || []).map(s => s.key).filter(Boolean));
+    const seenEventKeys = new Set(player.seenEvents || []);
+    const event = getRandomEvent(seenStoryKeys, seenEventKeys, player.day);
     UI.showEventPopup(event, choice => {
       player.modify(choice.changes || {});
       if (event.isStory) {
-        player.addStory({ title: event.storyTitle, emoji: event.storyEmoji, text: event.text, reply: choice.reply || '', tone: choice.tone });
+        player.addStory({ title: event.storyTitle, emoji: event.storyEmoji, text: event.text, reply: choice.reply || '', tone: choice.tone, key: event._storyKey });
         UI.showStoryBadge(player.storyLog.length);
+      } else if (event._eventKey) {
+        player.seenEvents = player.seenEvents || [];
+        if (!player.seenEvents.includes(event._eventKey)) {
+          player.seenEvents.push(event._eventKey);
+          // 全部普通事件都见过则重洗
+          const nonStoryTotal = POPUP_EVENTS.filter(e => !e.isStory).length;
+          if (player.seenEvents.length >= nonStoryTotal) player.seenEvents = [];
+        }
       }
       UI.appendLog((choice.reply || event.text).split('\n')[0], choice.tone);
       UI.updateStats(player);
@@ -424,9 +558,9 @@ const Game = (() => {
   function checkMarketEvent() {} // handled by scheduleMarket
 
   function triggerMarketEvent() {
-    const ev = pickMarketEvent();
+    const ev = pickMarketEvent(player.btcMarket);
     const prev = player.btcMarket;
-    player.btcMarket = clamp2(prev * ev.mult, 0.02, 6.0);
+    player.btcMarket = clamp2(prev * ev.mult, 0.02, 10.0);
 
     // 只在投资面板已解锁（设备齐全）时才显示行情新闻
     if (!player.gearComplete) return;

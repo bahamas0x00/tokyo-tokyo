@@ -12,11 +12,14 @@ class Player {
     this.energy    = 100;         // 新角色满状态
     this.health    = 100;
     this.happiness = 100;
-    this.sickUntil = 0;           // 病倒结束时间戳（>now = 正在强制休息）
+    this.sickUntil     = 0;       // 病倒结束时间戳（>now = 正在强制休息）
+    this.collapseUntil = 0;       // 体力归零趴桌昏睡结束时间戳
+    this.seenEvents    = [];      // 已见普通事件 key（全见完后重洗）
     this.minEnergy    = 100;      // 历史最低值（生活消费「按需求」解锁用，单调不增）
     this.minHealth    = 100;
     this.minHappiness = 100;
     this.crisisShown  = false;    // 离职危机是否已弹（快乐回升后重置）
+    this.warnCount    = 0;        // 嘴硬警告累计次数（第3次触发 HR 约谈）
     this.money     = 0;           // 当前余额
     this.totalEarned = 0;         // 累计赚过的钱
     this.peakMoney = 0;           // 历史最高余额（渐进解锁用，单调不减）
@@ -58,6 +61,11 @@ class Player {
     // ── 故事档案（只存真实经历）──
     this.storyLog  = [];   // [{ title, emoji, text, reply, day, time, tone }]
 
+    // ── 成就 ──
+    this.achievements  = [];   // 已解锁成就 id 列表
+    this.everCollapsed = false; // 曾经趴桌
+    this.everSick      = false; // 曾经病倒
+
     // ── 状态 ──
     this.company   = '株式会社ブラック商事';
     this.lastTick  = Date.now();
@@ -80,7 +88,8 @@ class Player {
     const h = this.happiness;
     return h > 70 ? 1.1 : h > 40 ? 1.0 : h > 20 ? 0.85 : 0.7;
   }
-  get isSick() { return Date.now() < (this.sickUntil || 0); }
+  get isSick()      { return Date.now() < (this.sickUntil     || 0); }
+  get isCollapsed() { return Date.now() < (this.collapseUntil || 0); }
 
   // ── 点击收益（受体力 + 心情影响）────────────────────────────
   get clickValue() {
@@ -145,8 +154,8 @@ class Player {
       this.totalEarned += passiveEarned;
     }
 
-    // 自动点击累积（後輩 + AI）—— 病倒时暂停工作产出
-    const sick = this.isSick;
+    // 自动点击累积（後輩 + AI）—— 病倒/趴桌时暂停工作产出
+    const sick = this.isSick || this.isCollapsed;
     let autoClicks = 0;
     if (!sick) {
       this.autoClickAccum = (this.autoClickAccum || 0) + this.autoClickPerSec * secs;
@@ -166,9 +175,16 @@ class Player {
     // 状态缓慢衰减（每小时）
     const hrs = secs / 3600;
     const dm  = this.decayMod;  // 设备减缓衰减
+    const prevEnergy = this.energy;
     this.energy    = clamp(this.energy    - hrs * 3   * dm.energy, 0, 100);
-    this.happiness = clamp(this.happiness - hrs * 2,              0, 100);
-    this.health    = clamp(this.health    - hrs * 0.5 * dm.health, 0, 100);
+    this.happiness = clamp(this.happiness - hrs * 20,             0, 100);
+    this.health    = clamp(this.health    - hrs * 2   * dm.health, 0, 100);
+    let collapseStarted = false;
+    if (prevEnergy > 0 && this.energy <= 0 && !this.isCollapsed) {
+      this.collapseUntil = now + (2 + Math.random() * 2) * 60000;
+      collapseStarted = true;
+      this.everCollapsed = true;
+    }
 
     this.peakMoney = Math.max(this.peakMoney || 0, this.money);  // 渐进解锁
     // DAY = 在职天数（年功序列）：随真实在职时长推进，与收入脱钩
@@ -187,6 +203,7 @@ class Player {
       if (Math.random() < prob) {
         this.sickUntil = now + (5 + Math.random() * 5) * 60000;
         sickStarted = true;
+        this.everSick = true;
       }
     }
 
@@ -196,16 +213,16 @@ class Player {
     const reviewDue = (nextLevel <= 4 && PROMO_DAYS[this.careerLevel] &&
                        this.day >= PROMO_DAYS[this.careerLevel]) ? nextLevel : null;
 
-    return { autoClicks, sickStarted, reviewDue };
+    return { autoClicks, sickStarted, reviewDue, collapseStarted };
   }
 
   // ── 点击 ─────────────────────────────────────────────────────
   // 连击倍率：3秒内持续点击累积，停下即重置
   get comboMult() {
     const c = this.comboCount;
-    if (c >= 30) return 3.0;
-    if (c >= 15) return 2.0;
-    if (c >= 5)  return 1.5;
+    if (c >= 30) return 2.0;
+    if (c >= 15) return 1.5;
+    if (c >= 5)  return 1.2;
     return 1.0;
   }
 
@@ -223,7 +240,8 @@ class Player {
     this.money       += earned;
     this.totalEarned += earned;
     this.peakMoney    = Math.max(this.peakMoney || 0, this.money);
-    this.energy = clamp(this.energy - 0.05, 0, 100);
+    this.energy    = clamp(this.energy    - 0.05 * mult, 0, 100);
+    this.happiness = clamp(this.happiness - 0.03,        0, 100);
     return { value: earned, combo: this.comboCount, mult };
   }
 
@@ -254,11 +272,12 @@ class Player {
 
   buyInvestment(type) {
     const inv = INVESTMENTS[type];
-    if (!inv || !this.canAfford(inv.price)) return false;
-    this.money -= inv.price;
+    const mktPrice = type === 'btc' ? Math.round(inv.price * (this.btcMarket || 1)) : inv.price;
+    if (!inv || !this.canAfford(mktPrice)) return false;
+    this.money -= mktPrice;
     const pos = this.portfolio[type];
     pos.qty++;
-    if (type === 'btc') pos.totalCost = (pos.totalCost || 0) + inv.price;
+    if (type === 'btc') pos.totalCost = (pos.totalCost || 0) + mktPrice;
     return true;
   }
 
@@ -323,6 +342,10 @@ class Player {
     if (!item) return false;
     if (!this.canAfford(item.cost)) return false;
     if (!this.canUseShop(id, item.cooldown)) return false;
+    const ch = item.changes || {};
+    if (ch.energy    < 0 && this.energy    <= 0) return false;
+    if (ch.health    < 0 && this.health    <= 0) return false;
+    if (ch.happiness < 0 && this.happiness <= 0) return false;
     this.money -= item.cost;
     this.modify(item.changes);
     this.shopCooldowns[id] = Date.now();
@@ -349,9 +372,16 @@ class Player {
     if (this.eventLog.length > 20) this.eventLog.pop();
   }
 
-  addStory({ title, emoji, text, reply, tone }) {
+  unlockAchievement(id) {
+    if (!this.achievements) this.achievements = [];
+    if (this.achievements.includes(id)) return false;
+    this.achievements.push(id);
+    return true;
+  }
+
+  addStory({ title, emoji, text, reply, tone, key }) {
     this.storyLog.unshift({
-      title, emoji, text, reply, tone,
+      title, emoji, text, reply, tone, key,
       day:  this.day,
       time: tokyoTimeStr(),
       id:   Date.now(),
@@ -386,12 +416,18 @@ class Player {
     delete p.market;
     p.peakMoney = Math.max(p.peakMoney || 0, p.money || 0);  // 渐进解锁基准
     // 属性系统新字段（旧档兼容）
-    if (p.sickUntil    == null) p.sickUntil    = 0;
+    if (p.sickUntil      == null) p.sickUntil      = 0;
+    if (p.collapseUntil  == null) p.collapseUntil  = 0;
     if (p.minEnergy    == null) p.minEnergy    = p.energy;
     if (p.minHealth    == null) p.minHealth    = p.health;
     if (p.minHappiness == null) p.minHappiness = p.happiness;
     if (p.crisisShown  == null) p.crisisShown  = false;
-    if (p.tenureSec    == null) p.tenureSec    = 0;   // 旧档：从 0 开始累在职时长
+    if (p.warnCount    == null) p.warnCount    = 0;
+    if (p.tenureSec      == null) p.tenureSec      = 0;
+    if (!p.achievements)         p.achievements   = [];
+    if (p.everCollapsed  == null) p.everCollapsed  = false;
+    if (p.everSick       == null) p.everSick       = false;
+    if (!Array.isArray(p.seenEvents))   p.seenEvents   = [];
     p.lastTick = Date.now();
     return p;
   }
@@ -402,7 +438,7 @@ const INVESTMENTS = {
   bonds: {
     id: 'bonds', label: '日本国债', label_ja: '日本国債', label_en: 'JGB Bond', emoji: '📜',
     price: 50000,
-    basePerSec: 0.5,
+    basePerSec: 5,
     desc:    '稳定，无聊，但绝不归零。买了就忘。',
     desc_ja: '安定、退屈、でもゼロにはならない。買って忘れる。',
     desc_en: 'Stable, boring, but never zero. Buy and forget.',
@@ -486,66 +522,62 @@ const AUTO_STAFF = [
 
 // ── 生活消费定义 ─────────────────────────────────────────────
 const SHOP_ITEMS = [
-  { id: 'rest', label: '工位趴一会', label_ja: '仮眠（デスク）', label_en: 'Desk nap', emoji: '😴', cost: 0, cooldown: 1_800_000, changes: { energy: 12 },
+  { id: 'rest', label: '工位趴一会', label_ja: '仮眠（デスク）', label_en: 'Desk nap', emoji: '😴', cost: 0, cooldown: 300_000, changes: { energy: 12 },
     desc: '体力+12', desc_ja: '体力+12', desc_en: 'Energy+12',
     reply:    '你趴在键盘上眯了十分钟。醒来时，脸上印着 Enter 键。',
     reply_ja: 'キーボードに突っ伏して十分の仮眠。起きたら頬にEnterキーの跡。',
     reply_en: 'Ten minutes face-down on the keyboard. You wake with an Enter key printed on your cheek.', tone: 'neutral' },
-  { id: 'conbini', label: '便利店', label_ja: 'コンビニ', label_en: 'Convenience store', emoji: '🏪', cost: 350, cooldown: 1_800_000, changes: { energy: 10, happiness: 5 },
+  { id: 'conbini', label: '便利店', label_ja: 'コンビニ', label_en: 'Convenience store', emoji: '🏪', cost: 1000, cooldown: 0, changes: { energy: 10, happiness: 5 },
     desc: '体力+10，快乐+5', desc_ja: '体力+10 幸福+5', desc_en: 'Energy+10 Mood+5',
-    reply:    '饭团还是饭团。"ありがとうございます"，今天听到最清晰的一句话。',
-    reply_ja: 'おにぎり、またおにぎり。「ありがとうございます」、今日いちばんはっきり聞こえた言葉。',
-    reply_en: 'Onigiri, again. "Arigatou gozaimasu" — the clearest words you heard all day.', tone: 'neutral' },
-  { id: 'ramen', label: '拉面', label_ja: 'ラーメン', label_en: 'Ramen', emoji: '🍜', cost: 950, cooldown: 7_200_000, changes: { energy: 25, happiness: 18 }, unlockNeed: { stat: 'energy', below: 82 },
+    reply:    '又是饭团。¥200，热量380kcal，服务全程不需要说日语。\n便利店是外国人在东京的救命稻草。',
+    reply_ja: 'またおにぎり。200円、カロリー380kcal、日本語不要。\nコンビニは東京在住外国人の命綱だ。',
+    reply_en: 'Onigiri again. ¥200, 380kcal, zero Japanese required.\nConvenience stores are a foreign resident\'s best friend.', tone: 'good' },
+  { id: 'ramen', label: '拉面', label_ja: 'ラーメン', label_en: 'Ramen', emoji: '🍜', cost: 2500, cooldown: 0, changes: { energy: 25, happiness: 18 }, unlockNeed: { stat: 'energy', below: 82 },
     desc: '体力+25，快乐+18', desc_ja: '体力+25 幸福+18', desc_en: 'Energy+25 Mood+18',
-    reply:    '豚骨拉面。你对着白烟发了很久的呆。没有人跟你说话。没关系。',
-    reply_ja: '豚骨ラーメン。湯気をぼんやり眺める。誰も話しかけてこない。それでいい。',
-    reply_en: 'Tonkotsu ramen. You stare into the steam. Nobody talks to you. That\'s fine.', tone: 'good' },
-  { id: 'izakaya', label: '居酒屋', label_ja: '居酒屋', label_en: 'Izakaya', emoji: '🍺', cost: 3000, cooldown: 14_400_000, changes: { energy: -8, happiness: 30 }, unlockNeed: { stat: 'happiness', below: 80 },
+    reply:    '豚骨拉面，¥2500，热量：不算了。\n汤有点咸，但一滴没剩——这叫尊重厨师。\n值。',
+    reply_ja: '豚骨ラーメン、2500円、カロリー：数えない。\nスープちょっとしょっぱい、でも完飲——これが職人へのリスペクト。\n最高。',
+    reply_en: 'Tonkotsu ramen, ¥2500, calories: not counting.\nA bit salty, but you finish every drop — that\'s how you respect the chef.\nWorth it.', tone: 'good' },
+  { id: 'izakaya', label: '居酒屋', label_ja: '居酒屋', label_en: 'Izakaya', emoji: '🍺', cost: 3000, cooldown: 0, changes: { energy: -8, happiness: 30 }, unlockNeed: { stat: 'happiness', below: 80 },
     desc: '快乐+30，体力-8', desc_ja: '幸福+30 体力-8', desc_en: 'Mood+30 Energy-8',
-    reply:    '生啤，枝豆。你听不懂旁边桌在说什么，但热闹的声音已经够了。',
-    reply_ja: '生ビール、枝豆。隣の席の会話は分からないけど、賑やかな音だけで十分。',
-    reply_en: 'Draft beer, edamame. You can\'t follow the next table, but the lively noise is enough.', tone: 'good' },
-  { id: 'gym', label: '健身房', label_ja: 'ジム', label_en: 'Gym', emoji: '💪', cost: 1000, cooldown: 86_400_000, changes: { health: 20, energy: -10 }, unlockNeed: { stat: 'energy', below: 65 },
-    desc: '健康+20，体力-10', desc_ja: '健康+20 体力-10', desc_en: 'Health+20 Energy-10',
-    reply:    '哑铃的重量是世界语言，不需要日语。',
-    reply_ja: 'ダンベルの重さは世界共通言語。日本語はいらない。',
-    reply_en: 'The weight of a dumbbell is a universal language. No Japanese needed.', tone: 'good' },
-  { id: 'gohome', label: '回家睡一觉', label_ja: '家でぐっすり', label_en: 'Sleep at home', emoji: '🛏️', cost: 2500, cooldown: 28_800_000, changes: { energy: 35, health: 10 }, unlockNeed: { stat: 'energy', below: 70 },
-    desc: '体力+35，健康+10', desc_ja: '体力+35 健康+10', desc_en: 'Energy+35 Health+10',
-    reply:    '你赶上了末班车，久违地躺在自己的床上。明天还要上班，但今晚是你的。',
-    reply_ja: '終電に間に合った。久しぶりに自分のベッドで眠る。明日も仕事。でも今夜は自分のものだ。',
-    reply_en: 'You catch the last train and lie in your own bed for once. Work again tomorrow — but tonight is yours.', tone: 'good' },
-  { id: 'fujoku', label: '风俗店', label_ja: '風俗店', label_en: 'Nightlife', emoji: '🏩', cost: 12000, cooldown: 0, changes: { happiness: 40, health: -3 }, unlockNeed: { stat: 'happiness', below: 62 },
-    desc: '快乐+40，健康-3', desc_ja: '幸福+40 健康-3', desc_en: 'Mood+40 Health-3',
+    reply:    '生啤+枝豆，居酒屋入门套餐。旁边那桌聊什么完全听不懂，\n但笑声能听懂，够了。',
+    reply_ja: '生ビールと枝豆、居酒屋の基本セット。隣の会話は全然わからない、\nでも笑い声はわかる。それで十分。',
+    reply_en: 'Draft beer + edamame. The izakaya starter pack. No idea what the next table is saying,\nbut laughter needs no translation. Good enough.', tone: 'good' },
+
+  { id: 'gohome', label: '回家睡一觉', label_ja: '家でぐっすり', label_en: 'Sleep at home', emoji: '🛏️', cost: 8000, cooldown: 0, changes: { energy: 100, health: 10 }, unlockNeed: { stat: 'energy', below: 70 },
+    desc: '体力全回，健康+10', desc_ja: '体力全回 健康+10', desc_en: 'Energy full restore · Health+10',
+    reply:    '赶上末班车，倒在自己床上。明天继续，今晚先关机。\n这已经很好了。',
+    reply_ja: '終電に間に合って自分のベッドに倒れ込む。明日もある、今夜はシャットダウン。\n十分すぎる。',
+    reply_en: 'Made the last train. Collapse into your own bed. Work tomorrow, shutdown tonight.\nThis is plenty.', tone: 'good' },
+  { id: 'fujoku', label: '风俗店', label_ja: '風俗店', label_en: 'Nightlife', emoji: '🏩', cost: 35000, cooldown: 0, changes: { happiness: 15, health: -12, energy: -60 }, unlockNeed: { stat: 'happiness', below: 80 },
+    desc: '快乐+15，体力-60，健康-12', desc_ja: '幸福+15 体力-60 健康-12', desc_en: 'Mood+15 Energy-60 Health-12',
     reply: null, tone: 'neutral' },
 ];
 
 // ── BTC 市场事件（weight 控制概率）───────────────────────────
 const MARKET_EVENTS = [
-  // 小涨（常见）
-  { text: '₿ 机构买入信号！比特币小幅回升。',      text_en: '₿ Institutional buying signal. BTC recovers.',         text_ja: '₿ 機関投資家の買いシグナル。BTC小幅回復。',     mult: 1.25, weight: 4, tone: 'good' },
-  { text: '₿ 比特币突破近期阻力位。',              text_en: '₿ Bitcoin breaks through resistance.',               text_ja: '₿ ビットコインが直近の抵抗線を突破。',           mult: 1.5,  weight: 3, tone: 'good' },
-  // 大涨（少见）
-  { text: '₿ 某国宣布比特币为法定货币！',          text_en: '₿ A nation adopts Bitcoin as legal tender!',         text_ja: '₿ ある国がビットコインを法定通貨に採用！',       mult: 2.0,  weight: 1, tone: 'good' },
-  { text: '₿ 比特币突破历史高点！加密市场狂欢。',  text_en: '₿ Bitcoin breaks all-time high! Crypto euphoria.',   text_ja: '₿ ビットコinが過去最高値を更新！暗号市場が沸く。', mult: 2.5, weight: 1, tone: 'good' },
-  // 小跌（常见）
-  { text: '₿ 获利了结，比特币小幅回调。',          text_en: '₿ Profit-taking. BTC dips slightly.',               text_ja: '₿ 利益確定売り。BTC小幅下落。',                 mult: 0.8,  weight: 4, tone: 'bad' },
-  { text: '₿ 监管消息面偏空，市场情绪谨慎。',      text_en: '₿ Regulatory headwinds. Market cautious.',          text_ja: '₿ 規制ニュース重し。市場は慎重姿勢。',           mult: 0.65, weight: 3, tone: 'bad' },
-  // 大跌（少见）
-  { text: '₿ 各国监管收紧，比特币暴跌40%！',      text_en: '₿ Global crackdown! Bitcoin -40%.',                 text_ja: '₿ 各国規制強化。ビットコイン40%暴落！',         mult: 0.45, weight: 2, tone: 'bad' },
-  { text: '₿ 某交易所疑似跑路，市场恐慌性抛售！', text_en: '₿ Exchange suspected exit scam. Panic selling!',    text_ja: '₿ 取引所が突然閉鎖疑惑。パニック売り！',        mult: 0.28, weight: 2, tone: 'bad' },
-  // 崩盘（罕见）
-  { text: '₿ 比特币遭遇闪崩！价格暴跌80%。',      text_en: '₿ Bitcoin flash crash! Price down 80%.',           text_ja: '₿ ビットコインがフラッシュクラッシュ！-80%。', mult: 0.15, weight: 1, tone: 'bad', isCrash: true },
+  // 中涨（常见）
+  { text: '₿ 机构大量买入，比特币强势反弹。',       text_en: '₿ Institutions accumulate. BTC surges.',              text_ja: '₿ 機関が大量購入。BTC急反発。',                 mult: 1.8,  weight: 5, tone: 'good' },
+  { text: '₿ 比特币突破关键阻力，多头爆发。',       text_en: '₿ Bulls break resistance. BTC rockets.',             text_ja: '₿ 重要な抵抗線を突破。強気相場爆発。',           mult: 2.2,  weight: 4, tone: 'good' },
+  // 暴涨（少见）
+  { text: '₿ 某国宣布比特币为法定货币！全网狂欢！', text_en: '₿ Nation adopts BTC as legal tender! Market euphoria!', text_ja: '₿ ある国がBTCを法定通貨に！市場が沸騰！',       mult: 3.5,  weight: 2, tone: 'good' },
+  { text: '₿ 比特币突破历史高点！散户全面入场！',   text_en: '₿ BTC all-time high! Retail FOMO kicks in!',         text_ja: '₿ BTCが過去最高値を更新！個人投資家が殺到！',   mult: 5.0,  weight: 1, tone: 'good' },
+  // 中跌（常见）
+  { text: '₿ 获利了结，比特币大幅回调。',           text_en: '₿ Mass profit-taking. BTC corrects sharply.',        text_ja: '₿ 大規模な利益確定。BTC急落。',                 mult: 0.55, weight: 4, tone: 'bad' },
+  { text: '₿ 监管重锤落地，市场信心崩溃。',         text_en: '₿ Regulatory crackdown crushes confidence.',         text_ja: '₿ 規制の鉄槌。市場の信頼が崩壊。',               mult: 0.4,  weight: 3, tone: 'bad' },
+  // 暴跌（少见）
+  { text: '₿ 巨鲸集体出货，比特币雪崩！',           text_en: '₿ Whales dump hard. BTC avalanche!',                 text_ja: '₿ クジラが一斉に売却。BTC大暴落！',             mult: 0.2,  weight: 2, tone: 'bad', isCrash: true },
+  { text: '₿ 某交易所疑似跑路，全网踩踏！',         text_en: '₿ Exchange exit scam. Panic stampede!',              text_ja: '₿ 取引所が逃亡疑惑。パニック売り殺到！',         mult: 0.1,  weight: 1, tone: 'bad', isCrash: true },
   // 归零（极罕见）
-  { text: '₿ 比特币归零。一切在一夜之间消失。',    text_en: '₿ Bitcoin collapses to zero. Everything gone overnight.', text_ja: '₿ ビットコインが限りなくゼロへ。一夜にしてすべてが消えた。', mult: 0.03, weight: 0.3, tone: 'bad', isCrash: true },
+  { text: '₿ 比特币归零。一切在一夜之间消失。',     text_en: '₿ Bitcoin collapses to zero. Everything gone overnight.', text_ja: '₿ BTCがゼロへ。一夜にしてすべてが消えた。',  mult: 0.03, weight: 0.2, tone: 'bad', isCrash: true },
 ];
 
-function pickMarketEvent() {
-  const total = MARKET_EVENTS.reduce((s, e) => s + e.weight, 0);
+function pickMarketEvent(mkt = 1) {
+  // 均值回归：行情极低时只抽涨的事件，避免永久趴底
+  const pool = mkt < 0.3 ? MARKET_EVENTS.filter(e => e.mult >= 1) : MARKET_EVENTS;
+  const total = pool.reduce((s, e) => s + e.weight, 0);
   let r = Math.random() * total;
-  for (const e of MARKET_EVENTS) { r -= e.weight; if (r <= 0) return e; }
-  return MARKET_EVENTS[MARKET_EVENTS.length - 1];
+  for (const e of pool) { r -= e.weight; if (r <= 0) return e; }
+  return pool[pool.length - 1];
 }
 
 // ── helpers ───────────────────────────────────────────────────
@@ -568,3 +600,31 @@ function tokyoTimeStr() {
 function tokyoHour() {
   return parseInt(new Date().toLocaleString('en-US', { timeZone: 'Asia/Tokyo', hour: '2-digit', hour12: false }), 10);
 }
+
+// ── 成就定义 ─────────────────────────────────────────────────
+const ACHIEVEMENTS = [
+  // 财务
+  { id: 'earn_10k',     emoji: '💴', label: '第一桶金',   label_en: 'First Earnings',       label_ja: '初めての稼ぎ',     desc: '累计收入 ¥10,000',       desc_en: 'Total earnings ¥10,000',       desc_ja: '累計¥10,000' },
+  { id: 'earn_100k',    emoji: '💵', label: '越来越熟练', label_en: 'Getting the Hang',     label_ja: 'だんだん慣れてきた', desc: '累计收入 ¥100,000',      desc_en: 'Total earnings ¥100,000',      desc_ja: '累計¥100,000' },
+  { id: 'earn_1m',      emoji: '💰', label: '百万社畜',   label_en: 'Million Drone',        label_ja: '百万社畜',           desc: '累计收入 ¥1,000,000',    desc_en: 'Total earnings ¥1,000,000',    desc_ja: '累計¥1,000,000' },
+  { id: 'earn_10m',     emoji: '🏦', label: '千万打工人', label_en: 'Ten-Million Grind',    label_ja: '千万社畜',           desc: '累计收入 ¥10,000,000',   desc_en: 'Total earnings ¥10,000,000',   desc_ja: '累計¥10,000,000' },
+  { id: 'earn_100m',    emoji: '👑', label: '资本家雏形', label_en: 'Proto-Capitalist',     label_ja: '資本家の卵',         desc: '累计收入 ¥100,000,000',  desc_en: 'Total earnings ¥100,000,000',  desc_ja: '累計¥1億' },
+  // 设备
+  { id: 'got_keyboard', emoji: '⌨️', label: '键盘侠',     label_en: 'Keyboard Warrior',     label_ja: 'キーボード戦士',     desc: '购买人体工学键盘',        desc_en: 'Bought an ergonomic keyboard', desc_ja: '人間工学キーボードを購入' },
+  { id: 'got_monitor',  emoji: '🖥️', label: '护眼人士',   label_en: 'Eye Care',             label_ja: '目を労わる',         desc: '购买曲面显示器',          desc_en: 'Bought a curved monitor',      desc_ja: '曲面モニターを購入' },
+  { id: 'got_chair',    emoji: '💺', label: '腰椎自救',   label_en: 'Lumbar Support',       label_ja: '腰を守れ',           desc: '购买人体工学椅',          desc_en: 'Bought an ergonomic chair',    desc_ja: '人間工学チェアを購入' },
+  { id: 'got_ai',       emoji: '🤖', label: 'AI依赖症',   label_en: 'AI Dependent',         label_ja: 'AI依存症',           desc: '购买AI助手',              desc_en: 'Bought an AI assistant',       desc_ja: 'AIアシスタントを購入' },
+  // 职级
+  { id: 'promoted_1',   emoji: '📋', label: '不再是新人', label_en: 'No Longer New',        label_ja: '新人じゃなくなった', desc: '晋升至平社員',            desc_en: 'Promoted to regular employee', desc_ja: '平社員に昇格' },
+  { id: 'promoted_2',   emoji: '🗂️', label: '开始管人了', label_en: 'First Command',        label_ja: '部下ができた',       desc: '晋升至主任',              desc_en: 'Promoted to team lead',        desc_ja: '主任に昇格' },
+  // 自动化
+  { id: 'got_kohai',    emoji: '👥', label: '前辈的自觉', label_en: 'Senpai Mode',          label_ja: '先輩の自覚',         desc: '招募第一个後輩',          desc_en: 'Hired your first junior',      desc_ja: '後輩を初採用' },
+  { id: 'got_script',   emoji: '🖥️', label: '第一个脚本', label_en: 'First Automation',     label_ja: '初めての自動化',     desc: '购买自动化脚本',          desc_en: 'Bought your first auto-script', desc_ja: '初めて自動スクリプトを購入' },
+  // 投资
+  { id: 'invested',     emoji: '📈', label: '理财入门',   label_en: 'Investor',             label_ja: '投資家の卵',         desc: '购买第一支日本国债',      desc_en: 'Bought your first JGB bond',   desc_ja: '初めての国債購入' },
+  { id: 'btc_holder',   emoji: '₿',  label: '数字资产',   label_en: 'HODL',                 label_ja: 'HODL',               desc: '购买比特币',              desc_en: 'Bought Bitcoin',               desc_ja: 'ビットコインを購入' },
+  // 生存
+  { id: 'collapsed',    emoji: '💤', label: '社畜极限',   label_en: 'Burnout',              label_ja: '社畜の限界',         desc: '第一次体力耗尽趴桌',      desc_en: 'Collapsed at your desk',       desc_ja: '初めて机に倒れた' },
+  { id: 'got_sick',     emoji: '🤒', label: '职业病',     label_en: 'Occupational Hazard',  label_ja: '職業病',             desc: '第一次因健康透支病倒',    desc_en: 'Sick from overwork',           desc_ja: '初めて過労で倒れた' },
+  { id: 'first_fujoku', emoji: '🏩', label: '东京夜晚',   label_en: 'Tokyo Night',          label_ja: '東京の夜',           desc: '第一次去风俗店',          desc_en: 'Your first nightlife visit',   desc_ja: '初めて風俗店に行った' },
+];
