@@ -294,6 +294,17 @@ html, body { height: 100%; overflow: hidden; background: var(--bg); color: var(-
 .px-setup.typing .px-dancer { animation-duration: .35s; }
 .px-setup.typing .px-keyboard { transform: translateY(2px); box-shadow: 0 2px 0 #7a4000; }
 
+/* —— 连击计数器 —— */
+.combo-display {
+  position: absolute; top: 8px; left: 10px; z-index: 5;
+  font-family: var(--font-px); font-size: 11px; letter-spacing: 1px;
+  padding: 2px 8px; border: 2px solid; pointer-events: none;
+}
+.combo-display.lv1 { color: var(--cyan);  border-color: var(--cyan);  background: rgba(0,240,255,.12); }
+.combo-display.lv2 { color: var(--gold);  border-color: var(--gold);  background: rgba(255,200,0,.12); }
+.combo-display.lv3 { color: var(--pink);  border-color: var(--pink);  background: rgba(255,45,120,.15); animation: blink .35s steps(1) infinite; }
+.float-num.combo   { color: var(--gold);  font-size: 15px; font-weight: bold; }
+
 /* —— 东京夜景办公室（点击区） —— */
 .pixel-office { position: relative; overflow: hidden;
   background: linear-gradient(#0a1226 0%, #0e1830 55%, #16223e 100%); }
@@ -333,10 +344,10 @@ html, body { height: 100%; overflow: hidden; background: var(--bg); color: var(-
 .team-member  { display: flex; flex-direction: column; align-items: center; gap: 2px; }
 .team-member-name { font-family: var(--font-dot); font-size: 10px; color: var(--cyan); white-space: nowrap; }
 .team-member-status { font-family: var(--font-dot); font-size: 9px; color: var(--dim); white-space: nowrap; }
-.kohai-char { image-rendering: pixelated; animation: kohai-work 2s steps(2) infinite; }
+.kohai-char { image-rendering: pixelated; animation: kohai-work 1.2s steps(2) infinite; }
 @keyframes kohai-work {
-  0%,100% { transform: scaleX(1); }
-  50%     { transform: scaleX(-1); }
+  0%,100% { transform: translateY(0); }
+  50%     { transform: translateY(-2px); }
 }
 
 /* ── event popup ── */
@@ -364,7 +375,7 @@ html, body { height: 100%; overflow: hidden; background: var(--bg); color: var(-
 .choice-btn:hover { background: var(--purple); color: var(--bg); transform: translate(-1px,-1px); box-shadow: 4px 4px 0 #3d2b7a; }
 
 /* ── market news ── */
-.market-news { font-family: var(--font-px); font-size: 9px; padding: 8px 12px; border: 2px solid var(--orange); background: var(--bg3); flex-shrink: 0; }
+.market-news { font-family: var(--font-px); font-size: 12px; padding: 8px 12px; border: 2px solid var(--orange); background: var(--bg3); flex-shrink: 0; }
 .market-news.good { border-color: var(--green); color: var(--green); }
 .market-news.bad  { border-color: var(--pink);  color: var(--pink); }
 

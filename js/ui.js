@@ -2,6 +2,28 @@
 const UI = (() => {
   let _prevStats = null;  // 上次的属性值，用于「数值突变」提示
 
+  // ── 金钱动画计数器（rAF 平滑追尾）──────────────────────────
+  let _animMoney = 0;
+  let _animRafId = null;
+  function startMoneyAnim(getPlayer) {
+    cancelAnimationFrame(_animRafId);
+    function frame() {
+      const target = getPlayer()?.money ?? 0;
+      const diff   = target - _animMoney;
+      if (diff < 0) {
+        _animMoney = target;              // 花钱立刻跳变
+      } else if (diff > 0.1) {
+        _animMoney += diff * 0.14;        // 赚钱平滑追尾
+      } else {
+        _animMoney = target;
+      }
+      const el = document.getElementById('val-money');
+      if (el) el.textContent = fmtMoneyLive(_animMoney);
+      _animRafId = requestAnimationFrame(frame);
+    }
+    frame();
+  }
+
   function show(id) {
     document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
     document.getElementById('screen-' + id).classList.add('active');
@@ -17,7 +39,7 @@ const UI = (() => {
     setText('hdr-title',      p.title);
     setText('hdr-day',        p.day);
     setText('hdr-clock',      tokyoTimeStr());
-    setText('val-money',      fmtMoney(p.money));
+    // val-money 由 startMoneyAnim rAF 动画接管，这里不再直接写
     setText('val-total',      fmtMoney(p.totalEarned));
     setText('val-click',      '¥' + p.clickValue);
     setText('val-passive',    fmtMoney(p.totalPerSec) + '/s');  // 总收入=投资+自动化
@@ -50,11 +72,9 @@ const UI = (() => {
     const pr = document.getElementById('passive-row');
     if (pr) pr.style.display = p.totalPerSec > 0 ? '' : 'none';
     // 贿赂按钮：未满级才显示，标签带当前贿赂金
-    const bribeBtn = document.getElementById('btn-bribe');
-    if (bribeBtn) {
-      if (p.careerLevel < 4) { bribeBtn.style.display = ''; bribeBtn.textContent = t('btn.bribe', { cost: fmtMoney(p.bribeCost) }); }
-      else bribeBtn.style.display = 'none';
-    }
+    // 贿赂按钮暂时隐藏（数值待调整）
+    // const bribeBtn = document.getElementById('btn-bribe');
+    // if (bribeBtn) { ... }
     // 空状态栏隐藏：後輩累计行 / 市场行情栏（无内容不显示）
     const ker = document.getElementById('kohai-earned-row');
     if (ker) ker.style.display = ((p.autoStaff?.kohai || 0) > 0 || (p.kohaiEarned || 0) > 0) ? '' : 'none';
@@ -84,6 +104,9 @@ const UI = (() => {
     const el = document.getElementById('team-members-display');
     if (!el) return;
     const count = p.autoStaff?.kohai || 0;
+    // 只在人数变化时重建 DOM，避免每秒重置动画造成闪缩
+    if (el.dataset.kohaiCount === String(count)) return;
+    el.dataset.kohaiCount = count;
     if (count === 0) {
       el.innerHTML = `<span style="font-size:11px;color:var(--dim)">${t('team.empty')}</span>`;
       return;
@@ -92,7 +115,7 @@ const UI = (() => {
     const statuses = kohaiStatuses();
     const html = Array.from({ length: Math.min(count, 8) }, (_, i) => {
       const name   = names[i % names.length];
-      const status = statuses[(i + Math.floor(Date.now()/5000)) % statuses.length];
+      const status = statuses[i % statuses.length];
       return `<div class="team-member">
         ${KOHAI_SVG}
         <div class="team-member-name">${name}</div>
@@ -394,17 +417,20 @@ const UI = (() => {
       const def = AUTO_STAFF.find(s => s.id === id);
       if (!def || !shown) return '';
       const count  = p.autoStaff?.[id] || 0;
+      const maxed  = id === 'kohai' && count >= p.kohaiMax;
       const price  = p.autoStaffPrice(id);
-      const afford = p.money >= price;
-      return `<div class="shop-item ${afford ? '' : 'locked'}">
+      const afford = !maxed && p.money >= price;
+      const cap    = id === 'kohai' ? `<span class="dim" style="font-size:10px">${count}/${p.kohaiMax}</span>` : `<span class="shop-count neon-cyan">×${count}</span>`;
+      const btnLabel = maxed ? t('upgrade.maxed') : fmtMoney(price);
+      return `<div class="shop-item ${(maxed || !afford) ? 'locked' : ''}">
         <div class="shop-item-header">
           <span>${def.emoji} ${tf(def, 'label')}</span>
-          <span class="shop-count neon-cyan">×${count}</span>
+          ${cap}
         </div>
         <div class="shop-item-desc">${tf(def, 'desc')}</div>
         <div class="shop-item-footer">
           <span class="shop-yield neon-green">+${def.clicksPerSec} clicks/s</span>
-          <button class="shop-btn ${afford ? '' : 'disabled'}" data-staff="${id}">${fmtMoney(price)}</button>
+          <button class="shop-btn ${(maxed || !afford) ? 'disabled' : ''}" data-staff="${id}">${btnLabel}</button>
         </div>
       </div>`;
     };
@@ -522,12 +548,12 @@ const UI = (() => {
   }
 
   // ── floating click number ──────────────────────────────────
-  function spawnFloat(amount) {
+  function spawnFloat(amount, isCombo) {
     const btn = document.getElementById('btn-click');
     if (!btn) return;
     const el  = document.createElement('div');
-    el.className = 'float-num';
-    el.textContent = '+¥' + amount.toLocaleString();
+    el.className = 'float-num' + (isCombo ? ' combo' : '');
+    el.textContent = typeof amount === 'number' ? '+¥' + amount.toLocaleString() : amount;
     const rect = btn.getBoundingClientRect();
     el.style.left = (rect.left + rect.width / 2 + (Math.random() - 0.5) * 60) + 'px';
     el.style.top  = (rect.top  - 10) + 'px';
@@ -651,7 +677,7 @@ const UI = (() => {
   }
 
   return {
-    show, updateStats, updateClock,
+    show, updateStats, updateClock, startMoneyAnim,
     renderAutoShop, renderInvestShop, renderUpgradeShop, renderLifeShop,
     showEventPopup, hideEventPopup,
     spawnFloat, spawnAutoFloat, showMarketNews, appendLog, toast,

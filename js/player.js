@@ -1,7 +1,7 @@
 'use strict';
 
 const REVEAL_RATIO = 0.7;  // 余额达到售价的 70% 时，道具出现在商店里
-const DAY_SECONDS  = 20;             // 真实秒数 / 1 在职天（年功序列推进速度，可调）
+const DAY_SECONDS  = 60;             // 真实秒数 / 1 在职天（年功序列推进速度，可调）
 const PROMO_DAYS   = [15, 45, 110, 220];  // 各级晋升所需在职天数（→平社員/主任/係長/課長）
 
 class Player {
@@ -24,6 +24,8 @@ class Player {
     // ── 点击系统 ──
     this.baseClickValue = 100;    // ¥/click 基础值
     this.clickUpgrades  = {};     // { upgradeId: count }
+    this.comboCount     = 0;      // 当前连击数
+    this.comboLastClick = 0;      // 上次点击时间戳（ms）
 
     // ── 设备等级 ──
     this.tierLevels = { keyboard: 0, monitor: 0, chair: 0, ai: 0 };
@@ -99,11 +101,11 @@ class Player {
     const ai = this.tierLevels?.ai || 0;
     if (ai >= 1) rate += 0.2;   // AI Lv1: +0.2/sec（每5秒1次）
     if (ai >= 2) rate += 0.3;   // AI Lv2: 累计 0.5/sec（每2秒1次）
-    if (ai >= 3) rate += 1.5;   // AI Lv3: 累计 2/sec
+    if (ai >= 3) rate += 0.5;   // AI Lv3: 累计 1/sec（AGI也只是加速工具，不是印钞机）
     return rate;
   }
 
-  // ── 被动收益 / 秒 ────────────────────────────────────────────
+  // ── 被动收益 / 秒（投资收益）────────────────────────────────────
   get passivePerSec() {
     const bondsQty = this.portfolio.bonds?.qty || 0;
     const btcQty   = this.portfolio.btc?.qty   || 0;
@@ -198,13 +200,31 @@ class Player {
   }
 
   // ── 点击 ─────────────────────────────────────────────────────
+  // 连击倍率：3秒内持续点击累积，停下即重置
+  get comboMult() {
+    const c = this.comboCount;
+    if (c >= 30) return 3.0;
+    if (c >= 15) return 2.0;
+    if (c >= 5)  return 1.5;
+    return 1.0;
+  }
+
   click() {
-    const earned = this.clickValue;
+    const now = Date.now();
+    if (now - this.comboLastClick > 3000) {
+      this.comboCount = 1;
+    } else {
+      this.comboCount++;
+    }
+    this.comboLastClick = now;
+
+    const mult   = this.comboMult;
+    const earned = Math.floor(this.clickValue * mult);
     this.money       += earned;
     this.totalEarned += earned;
-    // 点击消耗体力
+    this.peakMoney    = Math.max(this.peakMoney || 0, this.money);
     this.energy = clamp(this.energy - 0.05, 0, 100);
-    return earned;
+    return { value: earned, combo: this.comboCount, mult };
   }
 
   // ── 购买 ─────────────────────────────────────────────────────
@@ -260,7 +280,13 @@ class Player {
     return Math.round(def.cost * Math.pow(def.costScale, count));
   }
 
+  // 後輩招募上限：随职级解锁，不能无限压榨
+  get kohaiMax() {
+    return [0, 0, 1, 3, 6][this.careerLevel] || 0;
+  }
+
   buyAutoStaff(id) {
+    if (id === 'kohai' && (this.autoStaff?.kohai || 0) >= this.kohaiMax) return false;
     const price = this.autoStaffPrice(id);
     if (!this.canAfford(price)) return false;
     this.money -= price;
@@ -376,7 +402,7 @@ const INVESTMENTS = {
   bonds: {
     id: 'bonds', label: '日本国债', label_ja: '日本国債', label_en: 'JGB Bond', emoji: '📜',
     price: 50000,
-    basePerSec: 1.5,
+    basePerSec: 0.5,
     desc:    '稳定，无聊，但绝不归零。买了就忘。',
     desc_ja: '安定、退屈、でもゼロにはならない。買って忘れる。',
     desc_en: 'Stable, boring, but never zero. Buy and forget.',
@@ -384,8 +410,8 @@ const INVESTMENTS = {
   },
   btc: {
     id: 'btc', label: '比特币', label_ja: 'ビットコイン', label_en: 'Bitcoin', emoji: '₿',
-    price: 500000,
-    basePerSec: 20.0,
+    price: 200000,
+    basePerSec: 4.0,
     desc:    '可能让你财务自由，也可能让你哭着离开东京。',
     desc_ja: '経済的自由をくれるかも。泣きながら東京を去るかも。',
     desc_en: 'Could set you free, or send you home crying.',
@@ -400,21 +426,21 @@ const INVESTMENTS = {
 //              想好后填入即可，例：椅子 statBonus: { health: 10 }。
 //              若要改成「持续被动」效果，在 Player.tick() 里另行处理。
 const KEYBOARD_TIERS = [
-  { level: 1, label: '人体工学键盘', label_ja: '人間工学キーボード', label_en: 'Ergonomic Keyboard', emoji: '⌨️', bonus: 250, cost: 10000,  statBonus: {},
+  { level: 1, label: '人体工学键盘', label_ja: '人間工学キーボード', label_en: 'Ergonomic Keyboard', emoji: '⌨️', bonus: 10, cost: 10000,  statBonus: {},
     desc:    '手腕不疼了，可以敲更久。一次解锁，永久有效。',
     desc_ja: '手首が痛くない、もっと長く打てる。一度解放、永久有効。',
     desc_en: 'Wrists stop aching, type longer. One-time unlock, permanent.' },
 ];
 
 const MONITOR_TIERS = [
-  { level: 1, label: '带鱼屏曲面显示器', label_ja: 'ウルトラワイド曲面', label_en: 'Ultrawide Curved', emoji: '🖥️', bonus: 600, cost: 60000,  statBonus: {},
+  { level: 1, label: '带鱼屏曲面显示器', label_ja: 'ウルトラワイド曲面', label_en: 'Ultrawide Curved', emoji: '🖥️', bonus: 20, cost: 60000,  statBonus: {},
     desc:    '视野开阔，bug 也更容易发现了。一次解锁，永久有效。',
     desc_ja: '視野が広い、バグも見つけやすい。一度解放、永久有効。',
     desc_en: 'Wide view, bugs easier to spot. One-time unlock, permanent.' },
 ];
 
 const CHAIR_TIERS = [
-  { level: 1, label: '人体工学椅', label_ja: 'エルゴチェア', label_en: 'Ergonomic Chair', emoji: '🪑', bonus: 800, cost: 120000, statBonus: {},
+  { level: 1, label: '人体工学椅', label_ja: 'エルゴチェア', label_en: 'Ergonomic Chair', emoji: '🪑', bonus: 25, cost: 120000, statBonus: {},
     desc:    '你开始理解为什么程序员都爱这个。一次解锁，永久有效。',
     desc_ja: 'なぜエンジニアが愛するのか分かってきた。一度解放、永久有効。',
     desc_en: 'You get why devs love these. One-time unlock, permanent.' },
@@ -450,7 +476,7 @@ const AUTO_STAFF = [
   {
     id: 'kohai', label: '后辈工程师', label_ja: '後輩エンジニア', label_en: 'Junior Engineer', emoji: '👨‍💻',
     cost: 30000,
-    clicksPerSec: 0.3,   // 升主任后压榨后辈，每个 = 3 个脚本，比买 AI 爽
+    clicksPerSec: 0.15,  // 升主任后压榨后辈，每个 ≈ 1.5 个脚本
     desc:    '刚毕业的后辈，被你安排敲代码。压榨起来比买 AI 爽多了。',
     desc_ja: '新卒の後輩。コードを書かせる。AIを買うよりずっと爽快だ。',
     desc_en: 'A fresh-grad junior you put to work. Far more satisfying than buying AI.',
@@ -470,27 +496,27 @@ const SHOP_ITEMS = [
     reply:    '饭团还是饭团。"ありがとうございます"，今天听到最清晰的一句话。',
     reply_ja: 'おにぎり、またおにぎり。「ありがとうございます」、今日いちばんはっきり聞こえた言葉。',
     reply_en: 'Onigiri, again. "Arigatou gozaimasu" — the clearest words you heard all day.', tone: 'neutral' },
-  { id: 'ramen', label: '拉面', label_ja: 'ラーメン', label_en: 'Ramen', emoji: '🍜', cost: 950, cooldown: 7_200_000, changes: { energy: 25, happiness: 18 }, unlockNeed: { stat: 'energy', below: 40 },
+  { id: 'ramen', label: '拉面', label_ja: 'ラーメン', label_en: 'Ramen', emoji: '🍜', cost: 950, cooldown: 7_200_000, changes: { energy: 25, happiness: 18 }, unlockNeed: { stat: 'energy', below: 82 },
     desc: '体力+25，快乐+18', desc_ja: '体力+25 幸福+18', desc_en: 'Energy+25 Mood+18',
     reply:    '豚骨拉面。你对着白烟发了很久的呆。没有人跟你说话。没关系。',
     reply_ja: '豚骨ラーメン。湯気をぼんやり眺める。誰も話しかけてこない。それでいい。',
     reply_en: 'Tonkotsu ramen. You stare into the steam. Nobody talks to you. That\'s fine.', tone: 'good' },
-  { id: 'izakaya', label: '居酒屋', label_ja: '居酒屋', label_en: 'Izakaya', emoji: '🍺', cost: 3000, cooldown: 14_400_000, changes: { energy: -8, happiness: 30 }, unlockNeed: { stat: 'happiness', below: 50 },
+  { id: 'izakaya', label: '居酒屋', label_ja: '居酒屋', label_en: 'Izakaya', emoji: '🍺', cost: 3000, cooldown: 14_400_000, changes: { energy: -8, happiness: 30 }, unlockNeed: { stat: 'happiness', below: 80 },
     desc: '快乐+30，体力-8', desc_ja: '幸福+30 体力-8', desc_en: 'Mood+30 Energy-8',
     reply:    '生啤，枝豆。你听不懂旁边桌在说什么，但热闹的声音已经够了。',
     reply_ja: '生ビール、枝豆。隣の席の会話は分からないけど、賑やかな音だけで十分。',
     reply_en: 'Draft beer, edamame. You can\'t follow the next table, but the lively noise is enough.', tone: 'good' },
-  { id: 'gym', label: '健身房', label_ja: 'ジム', label_en: 'Gym', emoji: '💪', cost: 1000, cooldown: 86_400_000, changes: { health: 20, energy: -10 }, unlockNeed: { stat: 'health', below: 60 },
+  { id: 'gym', label: '健身房', label_ja: 'ジム', label_en: 'Gym', emoji: '💪', cost: 1000, cooldown: 86_400_000, changes: { health: 20, energy: -10 }, unlockNeed: { stat: 'energy', below: 65 },
     desc: '健康+20，体力-10', desc_ja: '健康+20 体力-10', desc_en: 'Health+20 Energy-10',
     reply:    '哑铃的重量是世界语言，不需要日语。',
     reply_ja: 'ダンベルの重さは世界共通言語。日本語はいらない。',
     reply_en: 'The weight of a dumbbell is a universal language. No Japanese needed.', tone: 'good' },
-  { id: 'gohome', label: '回家睡一觉', label_ja: '家でぐっすり', label_en: 'Sleep at home', emoji: '🛏️', cost: 2500, cooldown: 28_800_000, changes: { energy: 35, health: 10 }, unlockNeed: { stat: 'energy', below: 35 },
+  { id: 'gohome', label: '回家睡一觉', label_ja: '家でぐっすり', label_en: 'Sleep at home', emoji: '🛏️', cost: 2500, cooldown: 28_800_000, changes: { energy: 35, health: 10 }, unlockNeed: { stat: 'energy', below: 70 },
     desc: '体力+35，健康+10', desc_ja: '体力+35 健康+10', desc_en: 'Energy+35 Health+10',
     reply:    '你赶上了末班车，久违地躺在自己的床上。明天还要上班，但今晚是你的。',
     reply_ja: '終電に間に合った。久しぶりに自分のベッドで眠る。明日も仕事。でも今夜は自分のものだ。',
     reply_en: 'You catch the last train and lie in your own bed for once. Work again tomorrow — but tonight is yours.', tone: 'good' },
-  { id: 'fujoku', label: '风俗店', label_ja: '風俗店', label_en: 'Nightlife', emoji: '🏩', cost: 12000, cooldown: 0, changes: { happiness: 40, health: -3 }, unlockNeed: { stat: 'happiness', below: 30 },
+  { id: 'fujoku', label: '风俗店', label_ja: '風俗店', label_en: 'Nightlife', emoji: '🏩', cost: 12000, cooldown: 0, changes: { happiness: 40, health: -3 }, unlockNeed: { stat: 'happiness', below: 62 },
     desc: '快乐+40，健康-3', desc_ja: '幸福+40 健康-3', desc_en: 'Mood+40 Health-3',
     reply: null, tone: 'neutral' },
 ];
@@ -527,7 +553,13 @@ function clamp(v, lo = 0, hi = 100) { return Math.max(lo, Math.min(hi, v)); }
 function randMs(minMin, maxMin) { return (minMin + Math.random() * (maxMin - minMin)) * 60000; }
 function fmtMoney(n) {
   if (n >= 1_000_000) return '¥' + (n / 1_000_000).toFixed(2) + 'M';
-  if (n >= 1_000)     return '¥' + Math.floor(n / 1000) + 'k';
+  if (n >= 10_000)    return '¥' + (n / 1000).toFixed(1) + 'k';
+  return '¥' + Math.floor(n);
+}
+// 动画专用：小数更细，让数字一直在跳
+function fmtMoneyLive(n) {
+  if (n >= 1_000_000) return '¥' + (n / 1_000_000).toFixed(3) + 'M';
+  if (n >= 10_000)    return '¥' + (n / 1000).toFixed(2) + 'k';
   return '¥' + Math.floor(n);
 }
 function tokyoTimeStr() {

@@ -138,29 +138,63 @@
         <div class="pixel-office" id="btn-click">
           <!-- 窗外：东京夜景天际线 -->
           <svg class="px-skyline" viewBox="0 0 240 64" preserveAspectRatio="xMidYMax slice" style="image-rendering:pixelated">
-            <!-- 月亮 + 星星 -->
-            <rect x="206" y="6" width="8" height="8" fill="#f3e7a8"/><rect x="204" y="8" width="2" height="4" fill="#0e1830"/>
-            <rect x="30" y="6" width="1" height="1" fill="#fff"/><rect x="60" y="11" width="1" height="1" fill="#fff"/><rect x="100" y="5" width="1" height="1" fill="#cfe8ff"/><rect x="150" y="9" width="1" height="1" fill="#fff"/><rect x="184" y="4" width="1" height="1" fill="#fff"/>
-            <!-- 东京塔 -->
-            <polygon points="43,64 50,16 57,64" fill="#c0392b"/><rect x="47" y="10" width="6" height="8" fill="#e0555f"/><rect x="49" y="5" width="2" height="5" fill="#feca57"/>
-            <!-- 楼群剪影 -->
-            <g fill="#0e1c33">
-              <rect x="0" y="42" width="20" height="22"/><rect x="22" y="30" width="16" height="34"/>
-              <rect x="62" y="36" width="22" height="28"/><rect x="86" y="24" width="14" height="40"/>
-              <rect x="102" y="44" width="26" height="20"/><rect x="130" y="32" width="18" height="32"/>
-              <rect x="150" y="40" width="24" height="24"/><rect x="176" y="26" width="16" height="38"/>
-              <rect x="194" y="46" width="20" height="18"/><rect x="216" y="34" width="24" height="30"/>
+            <!-- 月亮（右侧，带阴影缺口） -->
+            <rect x="206" y="5" width="10" height="10" fill="#f3e7a8"/>
+            <rect x="204" y="7" width="3" height="6" fill="#0e1830"/>
+            <!-- 星星 -->
+            <rect x="28" y="7" width="1" height="1" fill="#fff"/>
+            <rect x="72" y="11" width="1" height="1" fill="#fff"/>
+            <rect x="118" y="5" width="1" height="1" fill="#cfe8ff"/>
+            <rect x="162" y="9" width="1" height="1" fill="#fff"/>
+            <rect x="190" y="4" width="1" height="1" fill="#fff"/>
+            <!-- 楼群（明显深蓝，与天空形成对比） -->
+            <g fill="#1e3060">
+              <rect x="0"   y="42" width="20" height="22"/>
+              <rect x="22"  y="30" width="14" height="34"/>
+              <rect x="64"  y="36" width="20" height="28"/>
+              <rect x="86"  y="24" width="14" height="40"/>
+              <rect x="102" y="44" width="26" height="20"/>
+              <rect x="130" y="32" width="18" height="32"/>
+              <rect x="150" y="40" width="24" height="24"/>
+              <rect x="176" y="26" width="16" height="38"/>
+              <rect x="194" y="46" width="20" height="18"/>
+              <rect x="216" y="34" width="24" height="30"/>
             </g>
-            <!-- 亮着的窗 -->
+            <!-- 亮灯的窗户（在楼体范围内） -->
             <g fill="#ffd76a">
-              <rect x="25" y="34" width="2" height="2"/><rect x="30" y="34" width="2" height="2"/><rect x="25" y="40" width="2" height="2"/><rect x="33" y="46" width="2" height="2"/>
-              <rect x="66" y="40" width="2" height="2"/><rect x="74" y="44" width="2" height="2"/><rect x="78" y="40" width="2" height="2"/>
-              <rect x="89" y="28" width="2" height="2"/><rect x="94" y="34" width="2" height="2"/><rect x="89" y="46" width="2" height="2"/>
-              <rect x="134" y="36" width="2" height="2"/><rect x="142" y="42" width="2" height="2"/><rect x="134" y="50" width="2" height="2"/>
-              <rect x="180" y="30" width="2" height="2"/><rect x="186" y="38" width="2" height="2"/><rect x="180" y="48" width="2" height="2"/>
-              <rect x="221" y="38" width="2" height="2"/><rect x="229" y="44" width="2" height="2"/><rect x="221" y="52" width="2" height="2"/>
+              <rect x="3"   y="46" width="2" height="2"/><rect x="9"   y="50" width="2" height="2"/><rect x="14"  y="46" width="2" height="2"/>
+              <rect x="25"  y="34" width="2" height="2"/><rect x="31"  y="38" width="2" height="2"/><rect x="25"  y="44" width="2" height="2"/>
+              <rect x="66"  y="40" width="2" height="2"/><rect x="72"  y="44" width="2" height="2"/><rect x="78"  y="40" width="2" height="2"/>
+              <rect x="90"  y="28" width="2" height="2"/><rect x="96"  y="36" width="2" height="2"/><rect x="90"  y="48" width="2" height="2"/>
+              <rect x="135" y="36" width="2" height="2"/><rect x="141" y="44" width="2" height="2"/><rect x="135" y="52" width="2" height="2"/>
+              <rect x="180" y="30" width="2" height="2"/><rect x="186" y="38" width="2" height="2"/><rect x="180" y="50" width="2" height="2"/>
+              <rect x="220" y="38" width="2" height="2"/><rect x="228" y="46" width="2" height="2"/><rect x="220" y="54" width="2" height="2"/>
             </g>
+            <!-- 东京塔（橙红色 · 标志性剪影） -->
+            <!-- 天线顶灯 -->
+            <rect x="49" y="2" width="2" height="2" fill="#fff"/>
+            <!-- 天线 -->
+            <rect x="49" y="4" width="2" height="5" fill="#ffd76a"/>
+            <!-- 上部塔身（细） -->
+            <rect x="48" y="9" width="4" height="9" fill="#e05523"/>
+            <!-- 第一观景台（宽横带） -->
+            <rect x="44" y="18" width="12" height="3" fill="#f07840"/>
+            <!-- 中部塔身 -->
+            <rect x="47" y="21" width="6" height="18" fill="#e05523"/>
+            <!-- 第二观景台 -->
+            <rect x="43" y="39" width="14" height="3" fill="#f07840"/>
+            <!-- 下部塔身 -->
+            <rect x="46" y="42" width="8" height="5" fill="#e05523"/>
+            <!-- 四条腿（A字形，向外扩展） -->
+            <polygon points="36,64 40,64 48,42 46,42" fill="#c73e15"/>
+            <polygon points="52,42 54,42 64,64 60,64" fill="#c73e15"/>
+            <rect x="46" y="42" width="8" height="22" fill="#c73e15"/>
+            <!-- 横向加固梁（增加结构感） -->
+            <rect x="39" y="57" width="22" height="2" fill="#d44a18"/>
           </svg>
+
+          <!-- 连击计数器 -->
+          <div id="combo-display" class="combo-display" style="display:none"></div>
 
           <!-- 工位：显示器 + 键盘 + 伏案的社畜 -->
           <div class="px-setup" id="px-main-worker">

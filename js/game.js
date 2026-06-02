@@ -100,7 +100,8 @@ const Game = (() => {
   // ── enter game ────────────────────────────────────────────
   function enterGame() {
     UI.show('game');
-    UI.updateStats(player);   // 立刻刷新一次，避免数值/状态栏先显示默认值再更新的闪烁
+    UI.updateStats(player);
+    UI.startMoneyAnim(() => player);  // rAF 金钱动画计数器
     renderShops();
     startLoop();
     bindGameButtons();
@@ -225,11 +226,35 @@ const Game = (() => {
   }
 
   // ── click ─────────────────────────────────────────────────
+  let _comboHideTimer = null;
+
   function handleClick() {
     if (player.isSick)      { UI.toast(t('toast.sick_resting')); return; }
     if (player.energy < 1)  { UI.toast(t('toast.energy_low')); return; }
-    const earned = player.click();
-    UI.spawnFloat(earned);
+    const { value, combo, mult } = player.click();
+    UI.spawnFloat(value, mult > 1.0);
+
+    // 连击显示
+    const comboEl = document.getElementById('combo-display');
+    if (comboEl) {
+      comboEl.style.display = combo >= 5 ? '' : 'none';
+      if (combo >= 5) {
+        const lv = mult >= 3 ? 'lv3' : mult >= 2 ? 'lv2' : 'lv1';
+        comboEl.className = 'combo-display ' + lv;
+        comboEl.textContent = `×${mult.toFixed(1)} ${combo}連`;
+      }
+      // 阈值首次触达时飘特效文字
+      if (combo === 5)  UI.spawnFloat('集中力 ×1.5', true);
+      if (combo === 15) UI.spawnFloat('入状態！×2.0', true);
+      if (combo === 30) UI.spawnFloat('🔥 燃焼 ×3.0', true);
+      // 3秒无点击后隐藏
+      clearTimeout(_comboHideTimer);
+      _comboHideTimer = setTimeout(() => {
+        if (comboEl) comboEl.style.display = 'none';
+        if (player) player.comboCount = 0;
+      }, 3000);
+    }
+
     // 打字动画
     const worker = document.getElementById('px-main-worker');
     if (worker) {
@@ -392,7 +417,7 @@ const Game = (() => {
   let marketTimer = null;
   function scheduleMarket() {
     clearTimeout(marketTimer);
-    const delay = 5 * 60000 + Math.random() * 10 * 60000; // 5-15分钟
+    const delay = 90000 + Math.random() * 150000; // 1.5–4 分钟
     marketTimer = setTimeout(() => { triggerMarketEvent(); scheduleMarket(); }, delay);
   }
 
@@ -402,6 +427,9 @@ const Game = (() => {
     const ev = pickMarketEvent();
     const prev = player.btcMarket;
     player.btcMarket = clamp2(prev * ev.mult, 0.02, 6.0);
+
+    // 只在投资面板已解锁（设备齐全）时才显示行情新闻
+    if (!player.gearComplete) return;
 
     const lang = getLang();
     const newsText = lang === 'en' && ev.text_en ? ev.text_en
