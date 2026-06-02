@@ -216,6 +216,12 @@ class Player {
     const t = this.tierLevels || {};
     return (t.keyboard >= 1) && (t.monitor >= 1) && (t.chair >= 1) && (t.ai >= 1);
   }
+  // 贿赂上司买官：花钱跳过熬资历直接晋升（玩梗·有冷却·小概率翻车）
+  get bribeCost() {
+    return [500000, 2000000, 8000000, 30000000][this.careerLevel] || 0; // 升下一级的贿赂金
+  }
+  get canBribe() { return this.careerLevel < 4 && Date.now() >= (this.bribeCooldown || 0); }
+
   // 设备 statBonus = 减缓相关属性衰减（好装备 = 可持续地肝）
   get decayMod() {
     const t = this.tierLevels || {};

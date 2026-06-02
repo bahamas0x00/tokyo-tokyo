@@ -119,6 +119,7 @@ const Game = (() => {
     document.getElementById('btn-to-title').addEventListener('click', () => {
       save(); UI.show('title');
     });
+    document.getElementById('btn-bribe')?.addEventListener('click', bribe);
     // bindMusic();  // 音乐功能暂时搁置（要开回来取消本行注释 + index.html 去掉 .music-bar 的 display:none）
   }
 
@@ -524,6 +525,34 @@ const Game = (() => {
       save();
       eventActive   = false;
       reviewShowing = false;
+    });
+  }
+
+  // ── 贿赂上司（买官捷径·玩梗）──────────────────────────────
+  function bribe() {
+    if (eventActive || player.careerLevel >= 4) return;
+    const cost = player.bribeCost;
+    if (player.money < cost)                    { UI.toast(t('toast.no_fund')); return; }
+    if (Date.now() < (player.bribeCooldown || 0)) { UI.toast(t('toast.bribe_cd')); return; }
+    player.money -= cost;
+    player.bribeCooldown = Date.now() + 5 * 60000;  // 5 分钟冷却
+    eventActive = true;
+    const caught = Math.random() < 0.25;            // 25% 翻车
+    UI.showEventPopup({
+      text: t(caught ? 'bribe.fail.text' : 'bribe.ok.text'),
+      choices: [{ label: t('choice.continue'), reply: t(caught ? 'bribe.fail.r' : 'bribe.ok.r'), changes: {}, tone: caught ? 'bad' : 'good' }],
+    }, () => {
+      if (caught) {
+        player.money += cost;                        // 退款
+        player.happiness = clamp(player.happiness - 10, 0, 100);
+        UI.appendLog(t('bribe.fail.log'), 'bad');
+      } else {
+        player.careerLevel++;
+        UI.appendLog(t('bribe.ok.log', { title: player.title }), 'good');
+        if (player.careerLevel === 2) UI.appendLog(t('log.kohai_unlocked'), 'good');
+      }
+      UI.updateStats(player); renderShops(); save();
+      eventActive = false;
     });
   }
 

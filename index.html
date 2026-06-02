@@ -103,6 +103,7 @@
         </div>
 
         <div class="panel-bottom">
+          <button class="menu-btn secondary small" id="btn-bribe" style="display:none;border-color:var(--gold);color:var(--gold)">💴 贿赂</button>
           <button class="menu-btn secondary small" id="btn-stories">
             <span data-i18n="btn.stories">📖 物語</span> <span id="story-badge" class="story-badge hidden">0</span>
           </button>
@@ -133,81 +134,69 @@
         <!-- 新手引导：点击赚钱（赚到一定钱后自动隐藏）-->
         <div id="click-hint" class="click-hint" data-i18n="hint.click">👆 点击下面的屏幕，敲代码赚钱</div>
 
-        <!-- 像素办公室点击区：显示器 + 键盘 -->
+        <!-- 像素办公室点击区：东京夜景 + 社畜伏案 -->
         <div class="pixel-office" id="btn-click">
+          <!-- 窗外：东京夜景天际线 -->
+          <svg class="px-skyline" viewBox="0 0 240 64" preserveAspectRatio="xMidYMax slice" style="image-rendering:pixelated">
+            <!-- 月亮 + 星星 -->
+            <rect x="206" y="6" width="8" height="8" fill="#f3e7a8"/><rect x="204" y="8" width="2" height="4" fill="#0e1830"/>
+            <rect x="30" y="6" width="1" height="1" fill="#fff"/><rect x="60" y="11" width="1" height="1" fill="#fff"/><rect x="100" y="5" width="1" height="1" fill="#cfe8ff"/><rect x="150" y="9" width="1" height="1" fill="#fff"/><rect x="184" y="4" width="1" height="1" fill="#fff"/>
+            <!-- 东京塔 -->
+            <polygon points="43,64 50,16 57,64" fill="#c0392b"/><rect x="47" y="10" width="6" height="8" fill="#e0555f"/><rect x="49" y="5" width="2" height="5" fill="#feca57"/>
+            <!-- 楼群剪影 -->
+            <g fill="#0e1c33">
+              <rect x="0" y="42" width="20" height="22"/><rect x="22" y="30" width="16" height="34"/>
+              <rect x="62" y="36" width="22" height="28"/><rect x="86" y="24" width="14" height="40"/>
+              <rect x="102" y="44" width="26" height="20"/><rect x="130" y="32" width="18" height="32"/>
+              <rect x="150" y="40" width="24" height="24"/><rect x="176" y="26" width="16" height="38"/>
+              <rect x="194" y="46" width="20" height="18"/><rect x="216" y="34" width="24" height="30"/>
+            </g>
+            <!-- 亮着的窗 -->
+            <g fill="#ffd76a">
+              <rect x="25" y="34" width="2" height="2"/><rect x="30" y="34" width="2" height="2"/><rect x="25" y="40" width="2" height="2"/><rect x="33" y="46" width="2" height="2"/>
+              <rect x="66" y="40" width="2" height="2"/><rect x="74" y="44" width="2" height="2"/><rect x="78" y="40" width="2" height="2"/>
+              <rect x="89" y="28" width="2" height="2"/><rect x="94" y="34" width="2" height="2"/><rect x="89" y="46" width="2" height="2"/>
+              <rect x="134" y="36" width="2" height="2"/><rect x="142" y="42" width="2" height="2"/><rect x="134" y="50" width="2" height="2"/>
+              <rect x="180" y="30" width="2" height="2"/><rect x="186" y="38" width="2" height="2"/><rect x="180" y="48" width="2" height="2"/>
+              <rect x="221" y="38" width="2" height="2"/><rect x="229" y="44" width="2" height="2"/><rect x="221" y="52" width="2" height="2"/>
+            </g>
+          </svg>
+
+          <!-- 工位：显示器 + 键盘 + 伏案的社畜 -->
           <div class="px-setup" id="px-main-worker">
-            <!-- 显示器 -->
             <div class="px-monitor">
               <div class="px-screen">
-                <!-- 滚动代码（绿色 matrix）-->
-                <div class="px-code">async fn ship(){
- const c = commit()
- if(!c) throw Bug
- review(c); merge()
-}
-class Shacho {
- overtime += 1
- salary -= tax
+                <div class="px-code">while(alive){
+ push(commit)
+ overtime++
  sleep = 0
-}
-while(alive){
- push(code)
- deploy(prod)
  // 逃げたい…
 }
 git push --force
-async fn ship(){
- const c = commit()
- if(!c) throw Bug
- review(c); merge()
-}
-class Shacho {
- overtime += 1
- salary -= tax
- sleep = 0
-}
 while(alive){
- push(code)
- deploy(prod)
+ push(commit)
+ overtime++
+ sleep = 0
  // 逃げたい…
 }
 git push --force</div>
-                <!-- 跳舞的像素少女（绫波丽风·原创致敬） -->
-                <svg class="px-dancer" width="44" height="60" viewBox="0 0 16 22" style="image-rendering:pixelated">
-                  <!-- 头发（淡蓝） -->
-                  <rect x="4" y="0" width="8" height="2" fill="#a9dcec"/>
-                  <rect x="3" y="1" width="10" height="3" fill="#a9dcec"/>
-                  <rect x="2" y="3" width="12" height="6" fill="#a9dcec"/>
-                  <!-- 脸（苍白） -->
-                  <rect x="4" y="4" width="8" height="5" fill="#f5e6dc"/>
-                  <!-- 刘海一缕 -->
-                  <rect x="7" y="4" width="2" height="2" fill="#a9dcec"/>
-                  <!-- 红眼 -->
-                  <rect x="5" y="6" width="2" height="2" fill="#e0555f"/>
-                  <rect x="9" y="6" width="2" height="2" fill="#e0555f"/>
-                  <!-- 身体（白色战斗服） -->
-                  <rect x="3" y="9" width="10" height="7" fill="#eef1f6"/>
-                  <!-- 蓝色领口 -->
-                  <rect x="6" y="9" width="4" height="2" fill="#6fb7d6"/>
-                  <!-- 举起的手臂（跳舞） -->
-                  <rect x="1" y="8" width="2" height="4" fill="#f5e6dc"/>
-                  <rect x="13" y="8" width="2" height="4" fill="#f5e6dc"/>
-                  <!-- 腿 -->
-                  <rect x="4" y="16" width="3" height="5" fill="#f5e6dc"/>
-                  <rect x="9" y="16" width="3" height="5" fill="#f5e6dc"/>
-                </svg>
               </div>
-              <!-- 屏幕扫描线 -->
               <div class="px-scan"></div>
             </div>
-            <!-- 显示器底座 -->
             <div class="px-monitor-neck"></div>
             <div class="px-monitor-foot"></div>
-            <!-- 键盘 -->
             <div class="px-keyboard">
               <span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span>
               <span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span>
             </div>
+            <!-- 社畜（伏案敲码）-->
+            <svg class="px-worker" viewBox="0 0 16 13" style="image-rendering:pixelated">
+              <rect x="4" y="0" width="8" height="3" fill="#2b2230"/><rect x="3" y="2" width="10" height="2" fill="#2b2230"/>
+              <rect x="4" y="4" width="8" height="3" fill="#f0b890"/>
+              <rect x="1" y="7" width="14" height="6" fill="#cdd6e6"/>
+              <rect x="7" y="7" width="2" height="6" fill="#c0392b"/>
+              <rect x="0" y="9" width="2" height="3" fill="#f0b890"/><rect x="14" y="9" width="2" height="3" fill="#f0b890"/>
+            </svg>
           </div>
 
           <div class="click-info">

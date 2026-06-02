@@ -294,6 +294,19 @@ html, body { height: 100%; overflow: hidden; background: var(--bg); color: var(-
 .px-setup.typing .px-dancer { animation-duration: .35s; }
 .px-setup.typing .px-keyboard { transform: translateY(2px); box-shadow: 0 2px 0 #7a4000; }
 
+/* —— 东京夜景办公室（点击区） —— */
+.pixel-office { position: relative; overflow: hidden;
+  background: linear-gradient(#0a1226 0%, #0e1830 55%, #16223e 100%); }
+.pixel-office:hover { background: linear-gradient(#0c1530 0%, #122038 55%, #1a2848 100%); }
+.px-skyline { position: absolute; left: 0; bottom: 0; width: 100%; height: 62%; z-index: 0; opacity: .9; pointer-events: none; }
+.px-setup  { position: relative; z-index: 2; }
+.px-worker {
+  position: absolute; left: 50%; bottom: -1px; transform: translateX(-50%);
+  width: 46px; height: auto; z-index: 3; pointer-events: none;
+  filter: drop-shadow(2px 2px 0 rgba(0,0,0,.5));
+}
+.px-setup.typing .px-worker { transform: translateX(-50%) translateY(2px); }
+
 /* click info */
 .click-info {
   position: absolute; bottom: 8px; right: 12px;

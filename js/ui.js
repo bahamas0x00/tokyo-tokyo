@@ -49,6 +49,12 @@ const UI = (() => {
     // 「自动收益/秒」没有被动收入时隐藏
     const pr = document.getElementById('passive-row');
     if (pr) pr.style.display = p.totalPerSec > 0 ? '' : 'none';
+    // 贿赂按钮：未满级才显示，标签带当前贿赂金
+    const bribeBtn = document.getElementById('btn-bribe');
+    if (bribeBtn) {
+      if (p.careerLevel < 4) { bribeBtn.style.display = ''; bribeBtn.textContent = t('btn.bribe', { cost: fmtMoney(p.bribeCost) }); }
+      else bribeBtn.style.display = 'none';
+    }
     // 空状态栏隐藏：後輩累计行 / 市场行情栏（无内容不显示）
     const ker = document.getElementById('kohai-earned-row');
     if (ker) ker.style.display = ((p.autoStaff?.kohai || 0) > 0 || (p.kohaiEarned || 0) > 0) ? '' : 'none';
