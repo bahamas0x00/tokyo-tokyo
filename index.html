@@ -162,14 +162,17 @@
             </g>
             <!-- 亮灯的窗户（在楼体范围内） -->
             <g fill="#ffd76a">
-              <rect x="3"   y="46" width="2" height="2"/><rect x="9"   y="50" width="2" height="2"/><rect x="14"  y="46" width="2" height="2"/>
-              <rect x="25"  y="34" width="2" height="2"/><rect x="31"  y="38" width="2" height="2"/><rect x="25"  y="44" width="2" height="2"/>
-              <rect x="66"  y="40" width="2" height="2"/><rect x="72"  y="44" width="2" height="2"/><rect x="78"  y="40" width="2" height="2"/>
-              <rect x="90"  y="28" width="2" height="2"/><rect x="96"  y="36" width="2" height="2"/><rect x="90"  y="48" width="2" height="2"/>
-              <rect x="135" y="36" width="2" height="2"/><rect x="141" y="44" width="2" height="2"/><rect x="135" y="52" width="2" height="2"/>
-              <rect x="180" y="30" width="2" height="2"/><rect x="186" y="38" width="2" height="2"/><rect x="180" y="50" width="2" height="2"/>
-              <rect x="220" y="38" width="2" height="2"/><rect x="228" y="46" width="2" height="2"/><rect x="220" y="54" width="2" height="2"/>
+              <rect class="px-win" x="3"   y="46" width="2" height="2"/><rect class="px-win" x="9"   y="50" width="2" height="2"/><rect class="px-win" x="14"  y="46" width="2" height="2"/>
+              <rect class="px-win" x="25"  y="34" width="2" height="2"/><rect class="px-win px-win--flicker" style="animation-delay:0s"   x="31"  y="38" width="2" height="2"/><rect class="px-win" x="25"  y="44" width="2" height="2"/>
+              <rect class="px-win" x="66"  y="40" width="2" height="2"/><rect class="px-win" x="72"  y="44" width="2" height="2"/><rect class="px-win" x="78"  y="40" width="2" height="2"/>
+              <rect class="px-win" x="90"  y="28" width="2" height="2"/><rect class="px-win px-win--flicker" style="animation-delay:-3s"  x="96"  y="36" width="2" height="2"/><rect class="px-win" x="90"  y="48" width="2" height="2"/>
+              <rect class="px-win" x="135" y="36" width="2" height="2"/><rect class="px-win px-win--flicker" style="animation-delay:-7s"  x="141" y="44" width="2" height="2"/><rect class="px-win" x="135" y="52" width="2" height="2"/>
+              <rect class="px-win" x="180" y="30" width="2" height="2"/><rect class="px-win" x="186" y="38" width="2" height="2"/><rect class="px-win" x="180" y="50" width="2" height="2"/>
+              <rect class="px-win" x="220" y="38" width="2" height="2"/><rect class="px-win px-win--flicker" style="animation-delay:-11s" x="228" y="46" width="2" height="2"/><rect class="px-win" x="220" y="54" width="2" height="2"/>
             </g>
+            <!-- 签名窗：深夜+低体力时唯一亮着的两扇灯 -->
+            <rect class="px-win px-win--signature" x="90" y="36" width="2" height="2" fill="#ffd76a" opacity="0"/>
+            <rect class="px-win px-win--signature" x="186" y="30" width="2" height="2" fill="#ffd76a" opacity="0"/>
             <!-- 东京塔（橙红色 · 标志性剪影） -->
             <!-- 天线顶灯 -->
             <rect x="49" y="2" width="2" height="2" fill="#fff"/>
