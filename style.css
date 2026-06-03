@@ -790,6 +790,17 @@ html, body { height: 100%; overflow: hidden; background: var(--bg); color: var(-
 
 /* —— 属性低值预警 + 病倒 —— */
 .stat-bar.low { background: var(--pink) !important; animation: blink .8s steps(2) infinite; }
+/* ── 体力状态叠加 ── */
+.pixel-office.energy-mid { filter: brightness(0.85); }
+.pixel-office.energy-low { filter: brightness(0.65) saturate(0.7); }
+
+/* ── 签名时刻：深夜 × 低体力 ── */
+.pixel-office.time-night.energy-low .px-win { opacity: 0.04; }
+.pixel-office.time-night.energy-low .px-win--signature { opacity: 1 !important; }
+.pixel-office.time-night.energy-low .px-screen {
+  box-shadow: 0 0 24px rgba(57,211,83,.5), inset 0 0 12px rgba(57,211,83,.2);
+}
+
 .pixel-office.sick,
 .pixel-office.collapsed { filter: grayscale(.7) brightness(.6); cursor: not-allowed; }
 /* 原 ::after 伪元素已替换为 #rest-overlay 元素 */
