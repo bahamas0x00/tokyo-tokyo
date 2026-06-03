@@ -282,7 +282,8 @@ html, body { height: 100%; overflow: hidden; background: var(--bg); color: var(-
 .px-train {
   position: absolute; bottom: 28%; left: 0;
   opacity: 0; pointer-events: none;
-  animation: train-slide 50s linear infinite;
+  animation: train-slide 22s linear infinite;
+  animation-delay: -6s;
 }
 .time-night .px-train { opacity: 0.75; }
 .time-dusk  .px-train { opacity: 0.35; }
