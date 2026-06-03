@@ -635,7 +635,8 @@ const Game = (() => {
         player.addStory({ title: story.storyTitle, emoji: story.storyEmoji, text: story.text, reply: choice.reply || '', tone: choice.tone });
         UI.showStoryBadge(player.storyLog.length);
       }
-      UI.appendLog('🏩 ' + (choice.reply || '').split('\n')[0], choice.tone);
+      const logLabel = story.isStory && story.storyTitle ? story.storyTitle : item.label;
+      UI.appendLog('🏩 ' + logLabel, choice.tone);
       UI.updateStats(player);
       renderShops();
       save();
