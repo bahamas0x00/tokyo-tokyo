@@ -362,9 +362,10 @@ html, body { height: 100%; overflow: hidden; background: var(--bg); color: var(-
   box-shadow: 4px 4px 0 #3d2b7a, 0 0 24px rgba(157,0,255,0.25);
   padding: 10px 14px 13px;
   transform: translateX(calc(100% + 28px));
-  transition: transform 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+  opacity: 1;
+  transition: transform 0.35s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.5s ease;
 }
-.event-popup.show   { transform: translateX(0); }
+.event-popup.show   { transform: translateX(0); opacity: 1; }
 .event-popup.hidden { display: none; }
 .event-countdown {
   position: absolute;
@@ -420,6 +421,14 @@ html, body { height: 100%; overflow: hidden; background: var(--bg); color: var(-
 }
 
 /* ── shop items ── */
+.shop-cat-label {
+  font-family: var(--font-dot);
+  font-size: 10px;
+  color: var(--dim);
+  text-align: center;
+  padding: 6px 0 2px;
+  letter-spacing: .1em;
+}
 .shop-item {
   background: var(--bg3);
   border: 2px solid var(--dim);
@@ -450,8 +459,14 @@ html, body { height: 100%; overflow: hidden; background: var(--bg); color: var(-
 }
 .shop-btn:hover:not(.disabled) { background: var(--cyan); color: var(--bg); transform: translate(-1px,-1px); box-shadow: 3px 3px 0 #004080; }
 .shop-btn.disabled { opacity: .3; cursor: not-allowed; border-color: var(--dim); color: var(--dim); box-shadow: none; }
-.buy-btn-group { display: flex; gap: 4px; align-items: center; }
-.shop-btn-bulk { border-color: var(--purple); color: var(--purple); box-shadow: 2px 2px 0 #3d2b7a; padding: 6px 8px; }
+.buy-btn-group { display: flex; gap: 3px; align-items: center; flex-wrap: nowrap; }
+.buy-btn-group .shop-btn { padding: 6px 8px; }
+.shop-btn-bulk { border-color: var(--purple); color: var(--purple); box-shadow: 2px 2px 0 #3d2b7a; padding: 6px 6px !important; font-size: 11px; }
+/* 投资面板：yield 行 + 按钮独占一行平分 */
+.inv-footer { flex-direction: column; align-items: stretch; gap: 6px; }
+.inv-buy-group { width: 100%; }
+.inv-buy-group .shop-btn,
+.inv-buy-group .shop-btn-bulk { flex: 1; text-align: center; padding: 7px 4px !important; }
 .shop-btn-bulk:hover:not(.disabled) { background: var(--purple); color: var(--bg); box-shadow: 3px 3px 0 #3d2b7a; }
 .ai-run-btn { border-color: var(--green); color: var(--green); box-shadow: 2px 2px 0 #006640; }
 .ai-run-btn:hover { background: var(--green) !important; color: var(--bg) !important; box-shadow: 3px 3px 0 #006640 !important; }
@@ -771,9 +786,21 @@ html, body { height: 100%; overflow: hidden; background: var(--bg); color: var(-
 
 /* —— 属性低值预警 + 病倒 —— */
 .stat-bar.low { background: var(--pink) !important; animation: blink .8s steps(2) infinite; }
-.pixel-office.sick { filter: grayscale(.7) brightness(.6); cursor: not-allowed; }
-.pixel-office.sick::after {
-  content: '🤒'; position: absolute; inset: 0;
+.pixel-office.sick,
+.pixel-office.collapsed { filter: grayscale(.7) brightness(.6); cursor: not-allowed; }
+/* 原 ::after 伪元素已替换为 #rest-overlay 元素 */
+
+.rest-overlay {
+  position: absolute; inset: 0; z-index: 10; pointer-events: none;
   display: flex; align-items: center; justify-content: center;
-  font-size: 48px; background: rgba(15,14,23,.5); pointer-events: none;
+  background: rgba(15,14,23,.55);
+}
+.rest-overlay-inner {
+  display: flex; flex-direction: column; align-items: center; gap: 6px;
+}
+#rest-icon { font-size: 44px; line-height: 1; }
+#rest-timer {
+  font-family: var(--font-pixel, monospace); font-size: 13px;
+  color: #fff; background: rgba(0,0,0,.6); padding: 2px 10px; border-radius: 4px;
+  letter-spacing: 1px;
 }

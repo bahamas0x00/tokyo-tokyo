@@ -64,7 +64,26 @@ const UI = (() => {
       if (bar) bar.classList.toggle('low', p[k] < 25);
     });
     const office = document.getElementById('btn-click');
-    if (office) office.classList.toggle('sick', p.isSick);
+    if (office) {
+      office.classList.toggle('sick',      p.isSick);
+      office.classList.toggle('collapsed', p.isCollapsed);
+    }
+    // 休息状态遮罩 + 倒计时
+    const overlay   = document.getElementById('rest-overlay');
+    const restIcon  = document.getElementById('rest-icon');
+    const restTimer = document.getElementById('rest-timer');
+    if (overlay && restIcon && restTimer) {
+      const resting = p.isSick || p.isCollapsed;
+      overlay.style.display = resting ? '' : 'none';
+      if (resting) {
+        const until = Math.max(p.sickUntil || 0, p.collapseUntil || 0);
+        const secsLeft = Math.max(0, Math.ceil((until - Date.now()) / 1000));
+        const mm = String(Math.floor(secsLeft / 60)).padStart(2, '0');
+        const ss = String(secsLeft % 60).padStart(2, '0');
+        restIcon.textContent  = p.isSick ? '🤒' : '💤';
+        restTimer.textContent = `${mm}:${ss}`;
+      }
+    }
     // 新手点击引导：赚到 ¥500 前显示
     const hint = document.getElementById('click-hint');
     if (hint) hint.style.display = (p.totalEarned < 500) ? '' : 'none';
@@ -312,19 +331,21 @@ const UI = (() => {
     // 国債：固定价格，稳定收益，不可卖
     const bondsInv    = INVESTMENTS.bonds;
     const bondsQty    = p.portfolio.bonds?.qty || 0;
-    const bondsAfford = p.money >= bondsInv.price;
+    const bondsAfford   = p.money >= bondsInv.price;
     const bonds10Afford = p.money >= bondsInv.price * 10;
+    const bonds100Afford= p.money >= bondsInv.price * 100;
     const bondsItem   = `<div class="shop-item ${bondsAfford ? '' : 'locked'}">
       <div class="shop-item-header">
         <span>📜 ${tf(bondsInv, 'label')}</span>
         <span class="shop-count">×${bondsQty}</span>
       </div>
       <div class="shop-item-desc">${tf(bondsInv, 'desc')}</div>
-      <div class="shop-item-footer">
+      <div class="shop-item-footer inv-footer">
         <span class="shop-yield neon-green">${fmtMoney(bondsInv.basePerSec)}/s ${t('inv.fixed')}</span>
-        <div class="buy-btn-group">
+        <div class="buy-btn-group inv-buy-group">
           <button class="shop-btn ${bondsAfford ? '' : 'disabled'}" data-key="bonds" data-qty="1">${fmtMoney(bondsInv.price)}</button>
           <button class="shop-btn shop-btn-bulk ${bonds10Afford ? '' : 'disabled'}" data-key="bonds" data-qty="10">×10</button>
+          <button class="shop-btn shop-btn-bulk ${bonds100Afford ? '' : 'disabled'}" data-key="bonds" data-qty="100">×100</button>
         </div>
       </div>
     </div>`;
@@ -347,11 +368,12 @@ const UI = (() => {
       <div class="shop-item-desc">${tf(btcInv, 'desc')}
         <br/><span class="${mCls}" style="font-size:10px">${t('portfolio.market')} ${sign}${pct}% · ${fmtMoney(btcPerSec)}/s</span>
       </div>
-      <div class="shop-item-footer">
+      <div class="shop-item-footer inv-footer">
         <span class="shop-yield dim">${t('inv.risk')}</span>
-        <div class="buy-btn-group">
+        <div class="buy-btn-group inv-buy-group">
           <button class="shop-btn ${btcAfford ? '' : 'disabled'}" data-key="btc" data-qty="1">${fmtMoney(btcMktPrice)}</button>
           <button class="shop-btn shop-btn-bulk ${p.money >= btcMktPrice * 10 ? '' : 'disabled'}" data-key="btc" data-qty="10">×10</button>
+          <button class="shop-btn shop-btn-bulk ${p.money >= btcMktPrice * 100 ? '' : 'disabled'}" data-key="btc" data-qty="100">×100</button>
         </div>
       </div>
     </div>`;
@@ -448,7 +470,8 @@ const UI = (() => {
     const scriptMaxed = scriptCount >= 20;
     const scriptRetired = p.careerLevel >= 2 && scriptCount === 0; // 升主任前没买过就不再显示
     const scriptHtml = staffCard('script',
-      !scriptRetired && (scriptCount > 0 || (!scriptMaxed && p.careerLevel < 2 && p.isRevealed(p.autoStaffPrice('script')))));
+      !scriptRetired && !scriptMaxed &&
+      (scriptCount > 0 || (p.careerLevel < 2 && p.isRevealed(p.autoStaffPrice('script')))));
     const kohaiHtml  = staffCard('kohai', p.canApplyForKohai);
 
     el.closest('.panel-section').style.display = (tiersHtml || scriptHtml || kohaiHtml) ? '' : 'none';
@@ -463,16 +486,16 @@ const UI = (() => {
   function renderLifeShop(p, onBuy) {
     const el = document.getElementById('life-shop');
     if (!el) return;
-    // 按需求解锁：无 unlockNeed 的(趴一会/便利店)始终显示；
-    // 有的当对应属性「曾跌破阈值」后永久出现（用历史最低值 minXxx，单调不增）
-    const items = SHOP_ITEMS.filter(item => {
+
+    const allItems = SHOP_ITEMS.filter(item => {
       if (!item.unlockNeed) return true;
       const n = item.unlockNeed;
       const minVal = p['min' + n.stat[0].toUpperCase() + n.stat.slice(1)];
       return (minVal ?? p[n.stat] ?? 100) <= n.below;
     });
-    el.closest('.panel-section').style.display = items.length ? '' : 'none';
-    el.innerHTML = items.map(item => {
+    el.closest('.panel-section').style.display = allItems.length ? '' : 'none';
+
+    function renderItem(item) {
       const price = item.costFn ? item.costFn(p) : item.cost;
       const canAfford = p.money >= price;
       const onCooldown = !p.canUseShop(item.id, item.cooldown);
@@ -480,7 +503,7 @@ const UI = (() => {
       const statDepleted = (ch.energy    < 0 && p.energy    <= 0) ||
                            (ch.health    < 0 && p.health    <= 0) ||
                            (ch.happiness < 0 && p.happiness <= 0);
-      const disabled  = !canAfford || onCooldown || statDepleted;
+      const disabled = !canAfford || onCooldown || statDepleted;
       const cooldownLabel = onCooldown ? t('shop.cooldown') : '';
       return `<div class="shop-item ${disabled ? 'locked' : ''}">
         <div class="shop-item-header">
@@ -493,7 +516,18 @@ const UI = (() => {
           </button>
         </div>
       </div>`;
-    }).join('');
+    }
+
+    const daily = allItems.filter(i => i.cat === 'daily');
+    const fun   = allItems.filter(i => i.cat === 'fun');
+
+    const dailyLabel = t('shop.cat.daily');
+    const funLabel   = t('shop.cat.fun');
+
+    el.innerHTML =
+      (daily.length ? `<div class="shop-cat-label">${dailyLabel}</div>` + daily.map(renderItem).join('') : '') +
+      (fun.length   ? `<div class="shop-cat-label">${funLabel}</div>`   + fun.map(renderItem).join('')   : '');
+
     el.querySelectorAll('.shop-btn:not(.disabled)').forEach(btn => {
       btn.addEventListener('click', () => onBuy(btn.dataset.id));
     });
@@ -513,9 +547,16 @@ const UI = (() => {
 
   const EVENT_TIMEOUT = 30000;
 
+  let _slideOutTimer = null;
+
   function _slideOutPopup(popup) {
     popup.classList.remove('show');
-    setTimeout(() => popup.classList.add('hidden'), 380);
+    popup.style.opacity = '0';
+    _slideOutTimer = setTimeout(() => {
+      popup.classList.add('hidden');
+      popup.style.opacity = '';
+      _slideOutTimer = null;
+    }, 550);
   }
 
   function showEventPopup(event, onChoice) {
@@ -524,6 +565,9 @@ const UI = (() => {
     const textEl     = document.getElementById('popup-text');
     const choicesEl  = document.getElementById('popup-choices');
     const resultEl   = document.getElementById('popup-result');
+
+    // 取消任何待执行的 slideOut 回调，防止它把新弹窗藏掉
+    if (_slideOutTimer) { clearTimeout(_slideOutTimer); _slideOutTimer = null; }
 
     // 重置
     clearTimeout(_eventTimer);
@@ -534,7 +578,8 @@ const UI = (() => {
     countdown.style.transition = 'none';
     countdown.style.width = '100%';
 
-    // 滑入
+    // 滑入（重置 opacity 防止上次 slideOut 留下 opacity:0）
+    popup.style.opacity = '';
     popup.classList.remove('hidden');
     requestAnimationFrame(() => requestAnimationFrame(() => popup.classList.add('show')));
 
@@ -553,7 +598,8 @@ const UI = (() => {
           resultEl.className = 'event-popup-result ' + (c.tone || 'neutral');
           resultEl.classList.remove('hidden');
         }
-        setTimeout(() => { _slideOutPopup(popup); resultEl.classList.add('hidden'); onChoice(c); }, 900);
+        const closeDelay = c._delay != null ? c._delay : 900;
+        setTimeout(() => { _slideOutPopup(popup); resultEl.classList.add('hidden'); onChoice(c); }, closeDelay);
       };
       if (c.reply) typewrite(textEl, c.reply, 18, finish);
       else finish();
@@ -652,8 +698,18 @@ const UI = (() => {
     if (!el) return;
     el.textContent = text;
     el.className   = 'market-news ' + tone;
+    el.style.opacity = '1';
+    el.style.transition = '';
     el.classList.remove('hidden');
-    setTimeout(() => el.classList.add('hidden'), 8000);
+    setTimeout(() => {
+      el.style.transition = 'opacity 1.5s ease';
+      el.style.opacity = '0';
+      setTimeout(() => {
+        el.classList.add('hidden');
+        el.style.opacity = '';
+        el.style.transition = '';
+      }, 1500);
+    }, 6500);
   }
 
   // ── log ────────────────────────────────────────────────────

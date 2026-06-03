@@ -66,6 +66,11 @@ class Player {
     // ── 故事档案（只存真实经历）──
     this.storyLog  = [];   // [{ title, emoji, text, reply, day, time, tone }]
 
+    // ── 柏青哥成瘾系统 ──
+    this.pachinkoCravings   = 0;  // 渴望值（0–∞），≥5 快乐衰减×2，≥8 体力也加速
+    this.pachinkoTotalSpent = 0;  // 累计赌注
+    this.pachinkoJackpots   = 0;  // 大当たり次数（成就用）
+
     // ── 成就 ──
     this.achievements  = [];   // 已解锁成就 id 列表
     this.everCollapsed = false; // 曾经趴桌
@@ -179,12 +184,18 @@ class Player {
     // 状态缓慢衰减（每小时）
     const hrs = secs / 3600;
     const dm  = this.decayMod;  // 设备减缓衰减
+    const crav = this.pachinkoCravings || 0;
+    const happinessMult = crav >= 5 ? 2.0 : 1.0;   // 成瘾：快乐衰减加速
+    const energyAddMult = crav >= 8 ? 1.3 : 1.0;   // 重度成瘾：体力也加速
     const prevEnergy = this.energy;
-    this.energy    = clamp(this.energy    - hrs * 3   * dm.energy, 0, 100);
-    this.happiness = clamp(this.happiness - hrs * 20,             0, 100);
-    this.health    = clamp(this.health    - hrs * 2   * dm.health, 0, 100);
+    this.energy    = clamp(this.energy    - hrs * 3  * dm.energy * energyAddMult, 0, 100);
+    this.happiness = clamp(this.happiness - hrs * 20 * happinessMult,             0, 100);
+    this.health    = clamp(this.health    - hrs * 2  * dm.health,                 0, 100);
+    // 病倒时强制休息，体力不低于 5（避免恢复后体力归零无法工作）
+    if (this.isSick) this.energy = Math.max(this.energy, 5);
     let collapseStarted = false;
-    if (prevEnergy > 0 && this.energy <= 0 && !this.isCollapsed) {
+    // 病倒期间不触发趴桌（已在强制休息中，避免双重惩罚）
+    if (prevEnergy > 0 && this.energy <= 0 && !this.isCollapsed && !this.isSick) {
       this.collapseUntil = now + (2 + Math.random() * 2) * 60000;
       collapseStarted = true;
       this.everCollapsed = true;
@@ -193,8 +204,13 @@ class Player {
 
     this.peakMoney = Math.max(this.peakMoney || 0, this.money);  // 渐进解锁
     // DAY = 在职天数（年功序列）：随真实在职时长推进，与收入脱钩
+    const prevDay = this.day;
     this.tenureSec = (this.tenureSec || 0) + secs;
     this.day = 1 + Math.floor(this.tenureSec / DAY_SECONDS);
+    // 柏青哥渴望值自然衰减（每游戏内天 −1）
+    if (this.day > prevDay && (this.pachinkoCravings || 0) > 0) {
+      this.pachinkoCravings = Math.max(0, this.pachinkoCravings - 1);
+    }
 
     // 历史最低值（生活消费「按需求」解锁用，单调不增）
     this.minEnergy    = Math.min(this.minEnergy    ?? this.energy,    this.energy);
@@ -357,6 +373,8 @@ class Player {
     if (ch.happiness < 0 && this.happiness <= 0) return false;
     this.money -= price;
     this.modify(item.changes);
+    if (item.clearRest)    { this.sickUntil = 0; this.collapseUntil = 0; }
+    if (item.cravingsDelta) { this.pachinkoCravings = Math.max(0, (this.pachinkoCravings || 0) + item.cravingsDelta); }
     this.shopCooldowns[id] = Date.now();
     this.shopUseCounts = this.shopUseCounts || {};
     this.shopUseCounts[id] = (this.shopUseCounts[id] || 0) + 1;
@@ -443,7 +461,10 @@ class Player {
     if (!p.shopUseCounts)         p.shopUseCounts  = {};
     if (p.maxCombo       == null) p.maxCombo       = 0;
     if (p.btcPeak        == null) p.btcPeak        = p.btcMarket || 1.0;
-    if (p.btcValley      == null) p.btcValley      = p.btcMarket || 1.0;
+    if (p.btcValley           == null) p.btcValley           = p.btcMarket || 1.0;
+    if (p.pachinkoCravings    == null) p.pachinkoCravings    = 0;
+    if (p.pachinkoTotalSpent  == null) p.pachinkoTotalSpent  = 0;
+    if (p.pachinkoJackpots    == null) p.pachinkoJackpots    = 0;
     p.lastTick = Date.now();
     return p;
   }
@@ -535,37 +556,52 @@ const AUTO_STAFF = [
 
 // ── 生活消费定义 ─────────────────────────────────────────────
 const SHOP_ITEMS = [
-  { id: 'rest', label: '工位趴一会', label_ja: '仮眠（デスク）', label_en: 'Desk nap', emoji: '😴', cost: 0, cooldown: 300_000, changes: { energy: 12 },
+  { id: 'rest', label: '工位趴一会', label_ja: '仮眠（デスク）', label_en: 'Desk nap', emoji: '😴', cat: 'daily', cost: 0, cooldown: 300_000, changes: { energy: 12 },
     desc: '体力+12', desc_ja: '体力+12', desc_en: 'Energy+12',
     reply:    '你趴在键盘上眯了十分钟。醒来时，脸上印着 Enter 键。',
     reply_ja: 'キーボードに突っ伏して十分の仮眠。起きたら頬にEnterキーの跡。',
     reply_en: 'Ten minutes face-down on the keyboard. You wake with an Enter key printed on your cheek.', tone: 'neutral' },
-  { id: 'conbini', label: '便利店', label_ja: 'コンビニ', label_en: 'Convenience store', emoji: '🏪', cost: 1000, cooldown: 0, changes: { energy: 10, happiness: 5 },
+  { id: 'conbini', label: '便利店', label_ja: 'コンビニ', label_en: 'Convenience store', emoji: '🏪', cat: 'daily', cost: 1000, cooldown: 0, changes: { energy: 10, happiness: 5 },
     desc: '体力+10，快乐+5', desc_ja: '体力+10 幸福+5', desc_en: 'Energy+10 Mood+5',
     reply:    '又是饭团。¥200，热量380kcal，服务全程不需要说日语。\n便利店是外国人在东京的救命稻草。',
     reply_ja: 'またおにぎり。200円、カロリー380kcal、日本語不要。\nコンビニは東京在住外国人の命綱だ。',
     reply_en: 'Onigiri again. ¥200, 380kcal, zero Japanese required.\nConvenience stores are a foreign resident\'s best friend.', tone: 'good' },
-  { id: 'ramen', label: '拉面', label_ja: 'ラーメン', label_en: 'Ramen', emoji: '🍜', cost: 2500, cooldown: 0, changes: { energy: 25, happiness: 18 }, unlockNeed: { stat: 'energy', below: 82 },
+  { id: 'ramen', label: '拉面', label_ja: 'ラーメン', label_en: 'Ramen', emoji: '🍜', cat: 'daily', cost: 2500, cooldown: 0, changes: { energy: 25, happiness: 18 }, unlockNeed: { stat: 'energy', below: 82 },
     desc: '体力+25，快乐+18', desc_ja: '体力+25 幸福+18', desc_en: 'Energy+25 Mood+18',
     reply:    '豚骨拉面，¥2500，热量：不算了。\n汤有点咸，但一滴没剩——这叫尊重厨师。\n值。',
     reply_ja: '豚骨ラーメン、2500円、カロリー：数えない。\nスープちょっとしょっぱい、でも完飲——これが職人へのリスペクト。\n最高。',
     reply_en: 'Tonkotsu ramen, ¥2500, calories: not counting.\nA bit salty, but you finish every drop — that\'s how you respect the chef.\nWorth it.', tone: 'good' },
-  { id: 'izakaya', label: '居酒屋', label_ja: '居酒屋', label_en: 'Izakaya', emoji: '🍺', cost: 3000, cooldown: 0, changes: { energy: -8, happiness: 30 }, unlockNeed: { stat: 'happiness', below: 80 },
+  { id: 'izakaya', label: '居酒屋', label_ja: '居酒屋', label_en: 'Izakaya', emoji: '🍺', cat: 'fun', cost: 3000, cooldown: 0, changes: { energy: -8, happiness: 30 }, unlockNeed: { stat: 'happiness', below: 80 },
     desc: '快乐+30，体力-8', desc_ja: '幸福+30 体力-8', desc_en: 'Mood+30 Energy-8',
     reply:    '生啤+枝豆，居酒屋入门套餐。旁边那桌聊什么完全听不懂，\n但笑声能听懂，够了。',
     reply_ja: '生ビールと枝豆、居酒屋の基本セット。隣の会話は全然わからない、\nでも笑い声はわかる。それで十分。',
     reply_en: 'Draft beer + edamame. The izakaya starter pack. No idea what the next table is saying,\nbut laughter needs no translation. Good enough.', tone: 'good' },
 
-  { id: 'gohome', label: '回家睡一觉', label_ja: '家でぐっすり', label_en: 'Sleep at home', emoji: '🛏️', cost: 8000,
+  { id: 'gohome', label: '回家睡一觉', label_ja: '家でぐっすり', label_en: 'Sleep at home', emoji: '🛏️', cat: 'daily', cost: 8000,
     costFn: p => [8000, 20000, 50000, 100000, 200000][p.careerLevel ?? 0],
     cooldown: 0, changes: { energy: 100, health: 10 }, unlockNeed: { stat: 'energy', below: 70 },
     desc: '体力全回，健康+10', desc_ja: '体力全回 健康+10', desc_en: 'Energy full restore · Health+10',
     reply:    '赶上末班车，倒在自己床上。明天继续，今晚先关机。\n这已经很好了。',
     reply_ja: '終電に間に合って自分のベッドに倒れ込む。明日もある、今夜はシャットダウン。\n十分すぎる。',
     reply_en: 'Made the last train. Collapse into your own bed. Work tomorrow, shutdown tonight.\nThis is plenty.', tone: 'good' },
-  { id: 'fujoku', label: '风俗店', label_ja: '風俗店', label_en: 'Nightlife', emoji: '🏩', cost: 35000, cooldown: 0, changes: { happiness: 15, health: -12, energy: -60 }, unlockNeed: { stat: 'happiness', below: 80 },
+  { id: 'fujoku', label: '风俗店', label_ja: '風俗店', label_en: 'Nightlife', emoji: '🏩', cat: 'fun', cost: 35000, cooldown: 0, changes: { happiness: 15, health: -12, energy: -60 }, unlockNeed: { stat: 'happiness', below: 80 },
     desc: '快乐+15，体力-60，健康-12', desc_ja: '幸福+15 体力-60 健康-12', desc_en: 'Mood+15 Energy-60 Health-12',
     reply: null, tone: 'neutral' },
+
+  { id: 'pachinko', label: '柏青哥', label_ja: 'パチンコ', label_en: 'Pachinko', emoji: '🎰', cat: 'fun',
+    cost: 5000, cooldown: 0, unlockNeed: { stat: 'happiness', below: 65 },
+    changes: {}, // 实际逻辑由 game.js buyPachinko() 处理
+    desc: '赌运气。一把就好……', desc_ja: '運試し。一回だけ……', desc_en: 'Just one spin…',
+    reply: null, tone: 'neutral' },
+
+  { id: 'clinic', label: '私立诊所', label_ja: '私立クリニック', label_en: 'Private Clinic', emoji: '🏥', cat: 'daily',
+    cost: 200000, cooldown: 600_000, unlockNeed: { stat: 'health', below: 50 },
+    changes: { health: 100 }, clearRest: true, cravingsDelta: -2,
+    desc: '健康全回，解除病倒状态', desc_ja: '健康全回・療養解除', desc_en: 'Health full restore · Clears sick state',
+    reply:    '诊察费 ¥200,000，医生看了血检说「过劳です」。\n打了点滴，领了维生素。出门时阳光刺得眼睛疼。\n可以工作了。',
+    reply_ja: '診察代20万円。血液検査を見た医者が「過労ですね」と言った。\n点滴を打って、ビタミン剤をもらった。外に出たら日差しが眩しかった。\n仕事できる。',
+    reply_en: '¥200,000 consultation. Doctor checked your bloodwork: "Karōshi risk," he said.\nYou got an IV drip and some vitamins. The sunlight stung your eyes on the way out.\nBack to work.',
+    tone: 'neutral' },
 ];
 
 // ── BTC 市场事件（weight 控制概率）───────────────────────────
@@ -643,13 +679,16 @@ const ACHIEVEMENTS = [
   { id: 'got_sick',        emoji: '🤒', label: '职业病',       label_en: 'Occupational Hazard',label_ja: '職業病',           desc: '第一次因健康透支病倒',         desc_en: 'Sick from overwork',              desc_ja: '初めて過労で倒れた' },
   { id: 'first_fujoku',    emoji: '🏩', label: '东京夜晚',     label_en: 'Tokyo Night',        label_ja: '東京の夜',         desc: '第一次去风俗店',               desc_en: 'Your first nightlife visit',      desc_ja: '初めて風俗店に行った' },
   // 在职里程碑
-  { id: 'day_100',         emoji: '💼', label: 'お疲れ様でした',label_en: 'Veteran',           label_ja: 'お疲れ様でした',   desc: '在职满100天',                  desc_en: '100 days on the job',             desc_ja: '在職100日達成' },
-  { id: 'promoted_3',      emoji: '📁', label: '係長になった', label_en: 'Section Chief',      label_ja: '係長になった',     desc: '晋升至係長',                   desc_en: 'Promoted to section chief',       desc_ja: '係長に昇格' },
-  { id: 'promoted_4',      emoji: '🏢', label: '課長になった', label_en: 'Department Head',    label_ja: '課長になった',     desc: '晋升至課長',                   desc_en: 'Promoted to department head',     desc_ja: '課長に昇格' },
+  { id: 'day_100',         emoji: '💼', label: '百天元老',     label_en: 'Veteran',           label_ja: 'お疲れ様でした',   desc: '在职满100天',                  desc_en: '100 days on the job',             desc_ja: '在職100日達成' },
+  { id: 'promoted_3',      emoji: '📁', label: '係長了',       label_en: 'Section Chief',      label_ja: '係長になった',     desc: '晋升至係長',                   desc_en: 'Promoted to section chief',       desc_ja: '係長に昇格' },
+  { id: 'promoted_4',      emoji: '🏢', label: '課長了',       label_en: 'Department Head',    label_ja: '課長になった',     desc: '晋升至課長',                   desc_en: 'Promoted to department head',     desc_ja: '課長に昇格' },
   // 装备 & 自动化
   { id: 'full_gear',       emoji: '✅', label: 'LGTM',         label_en: 'LGTM',               label_ja: 'LGTM',             desc: '购齐全套人体工学装备',         desc_en: 'Full ergonomic setup unlocked',   desc_ja: '人間工学フルセット完備' },
   { id: 'full_auto',       emoji: '⚡', label: '全自动化',     label_en: 'Full Auto',          label_ja: '全自動化',         desc: '同时拥有AI、脚本和後輩',       desc_en: 'AI + script + junior all active', desc_ja: 'AI・スクリプト・後輩全保有' },
   // 行为梗
+  { id: 'first_pachinko',    emoji: '🎰', label: '柏青哥首秀',    label_en: 'Pachinko Debut',   label_ja: 'パチンカー',       desc: '第一次去柏青哥',               desc_en: 'First time at the pachinko parlor', desc_ja: '初めてパチンコ店に入った' },
+  { id: 'pachinko_jackpot', emoji: '🎉', label: '大当たり！',    label_en: 'Jackpot!',         label_ja: '大当たり！',       desc: '触发大当たり',                 desc_en: 'Hit the jackpot',                   desc_ja: '大当たりを引いた' },
+  { id: 'pachinko_addict',  emoji: '😵', label: '赌博成瘾',      label_en: 'Gambling Addict',  label_ja: 'ギャンブル依存症', desc: '渴望值达到8',                  desc_en: 'Cravings maxed out',                desc_ja: '渇望値が8に達した' },
   { id: 'triple_collapse', emoji: '🛋️', label: '躺平三连',     label_en: 'Triple Burnout',     label_ja: '三連倒れ',         desc: '趴桌三次',                     desc_en: 'Collapsed at your desk 3 times',  desc_ja: '机に三回倒れた' },
   { id: 'rest_master',     emoji: '🐟', label: '摸鱼达人',     label_en: 'Slack Master',       label_ja: '怠け者の達人',     desc: '工位趴了5次',                  desc_en: 'Desk napped 5 times',             desc_ja: 'デスク仮眠5回' },
   { id: 'ramen_lover',     emoji: '🍜', label: '孤独的美食家', label_en: 'Solo Gourmet',       label_ja: '孤独のグルメ',     desc: '独自吃了5次拉面',              desc_en: 'Ate ramen alone 5 times',         desc_ja: '一人でラーメン5回' },

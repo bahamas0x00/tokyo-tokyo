@@ -249,6 +249,10 @@ const Game = (() => {
         if (curZone === 0) { UI.toast(t('toast.energy_warn_0'), 3000); UI.appendLog(t('log.energy_warn_0'), 'bad'); }
       }
       _lastEnergyZone = curZone;
+      // 柏青哥成瘾 log（渴望值 ≥5 时，每游戏内天约有 20% 概率触发）
+      if (!eventActive && (player.pachinkoCravings || 0) >= 5 && Math.random() < 0.003) {
+        UI.appendLog(t('pachinko.craving_log'), 'bad');
+      }
       UI.updateStats(player);
       renderShops();
       checkEvent();
@@ -366,14 +370,16 @@ const Game = (() => {
     });
 
     UI.renderLifeShop(player, id => {
-      if (id === 'fujoku') { buyFujoku(); return; }
+      if (id === 'pachinko') { buyPachinko(); return; }
+      if (id === 'fujoku')   { buyFujoku();   return; }
       const item = SHOP_ITEMS.find(s => s.id === id);
       if (!item) return;
       if (!player.canAfford(item.cost)) { UI.toast(t('toast.no_fund')); return; }
       if (!player.canUseShop(id, item.cooldown)) { UI.toast(t('toast.cooldown')); return; }
       player.buyShopItem(id);
       UI.appendLog(`${item.emoji} ${tf(item, 'reply') || tf(item, 'label')}`, item.tone);
-      UI.toast(`${item.emoji} ${tf(item, 'label')}`);
+      if (id === 'clinic') UI.toast(t('toast.clinic'), 2600);
+      else UI.toast(`${item.emoji} ${tf(item, 'label')}`);
       UI.updateStats(player);
       renderShops();
       save();
@@ -442,6 +448,102 @@ const Game = (() => {
   }
 
   // ── 风俗店购买 → 触发故事事件 ────────────────────────────
+  // ── 柏青哥 ────────────────────────────────────────────────
+  const PACHINKO_BETS = [5000, 20000, 50000];
+
+  function spinPachinko(bet) {
+    player.money -= bet;
+    player.pachinkoTotalSpent = (player.pachinkoTotalSpent || 0) + bet;
+    player.modify({ energy: -15, health: -5 });
+
+    const r = Math.random();
+    let mult, hapDelta, craveDelta, resultKey;
+    if      (r < 0.60) { mult = 0;   hapDelta = -15; craveDelta = 1; resultKey = 'lose'; }
+    else if (r < 0.75) { mult = 1;   hapDelta =   0; craveDelta = 0; resultKey = 'even'; }
+    else if (r < 0.88) { mult = 1.5; hapDelta =  10; craveDelta = 0; resultKey = 'small'; }
+    else if (r < 0.96) { mult = 3;   hapDelta =  20; craveDelta = 1; resultKey = 'medium'; }
+    else if (r < 0.99) { mult = 7;   hapDelta =  35; craveDelta = 2; resultKey = 'big'; }
+    else               { mult = 20;  hapDelta =  50; craveDelta = 3; resultKey = 'jackpot'; }
+
+    const winAmt  = Math.floor(bet * mult);
+    const netChange = winAmt - bet;
+    player.money += winAmt;
+    if (netChange > 0) player.totalEarned += netChange;
+    player.modify({ happiness: hapDelta });
+
+    const prevCrav = player.pachinkoCravings || 0;
+    player.pachinkoCravings = prevCrav + craveDelta;
+
+    const nearMiss = resultKey === 'lose' && Math.random() < 0.35;
+    const netStr = netChange >= 0
+      ? `+¥${fmtMoney(netChange)}`
+      : `-¥${fmtMoney(-netChange)}`;
+
+    let text = t(`pachinko.result.${resultKey}`);
+    if (nearMiss)     text += '\n' + t('pachinko.near_miss');
+    text += '\n' + netStr;
+    const newCrav = player.pachinkoCravings;
+    if (newCrav >= 8 && prevCrav < 8)      text += '\n' + t('pachinko.craving_heavy');
+    else if (newCrav >= 5 && prevCrav < 5) text += '\n' + t('pachinko.craving_onset');
+
+    UI.appendLog(`🎰 ${t('pachinko.log.' + resultKey, { net: netStr })}`,
+                 resultKey === 'lose' ? 'bad' : 'good');
+
+    if (resultKey === 'jackpot') {
+      player.pachinkoJackpots = (player.pachinkoJackpots || 0) + 1;
+      player.addStory({
+        title: t('pachinko.story.title'), emoji: '🎰',
+        text:  t('pachinko.story.text', { amt: fmtMoney(winAmt) }),
+        reply: t('pachinko.story.reply'), tone: 'good',
+      });
+      UI.showStoryBadge(player.storyLog.length);
+    }
+
+    checkAchievements();
+
+    const canRetry = player.canAfford(bet) && player.energy > 0;
+    UI.showEventPopup({
+      text,
+      choices: [
+        ...(canRetry ? [{ label: t('pachinko.retry'), tone: 'neutral', _retry: true }] : []),
+        { label: t('pachinko.quit'), tone: 'neutral', _retry: false, _delay: 100 },
+      ],
+    }, choice => {
+      if (choice._retry && player.canAfford(bet)) {
+        spinPachinko(bet);
+      } else {
+        UI.updateStats(player);
+        renderShops();
+        save();
+        eventActive = false;
+        player.scheduleNextEvent();
+      }
+    });
+
+    UI.updateStats(player);
+    renderShops();
+  }
+
+  function buyPachinko() {
+    if (eventActive) return;
+    if (!player.canAfford(PACHINKO_BETS[0])) { UI.toast(t('toast.no_fund')); return; }
+    if (player.energy <= 0) { UI.toast(t('toast.energy_low')); return; }
+    eventActive = true;
+    const affordBets = PACHINKO_BETS.filter(b => player.canAfford(b));
+    UI.showEventPopup({
+      text: t('pachinko.enter'),
+      choices: [
+        ...affordBets.map(b => ({
+          label: `¥${fmtMoney(b)}`, tone: 'neutral', _bet: b,
+        })),
+        { label: t('pachinko.leave'), tone: 'neutral', _bet: 0 },
+      ],
+    }, choice => {
+      if (!choice._bet) { eventActive = false; return; }
+      spinPachinko(choice._bet);
+    });
+  }
+
   function buyFujoku() {
     const item = SHOP_ITEMS.find(s => s.id === 'fujoku');
     if (!player.canAfford(item.cost)) { UI.toast(t('toast.no_fund')); return; }
@@ -505,7 +607,10 @@ const Game = (() => {
     btc_holder:   p => (p.portfolio?.btc?.qty   || 0) >= 1,
     collapsed:       p => p.everCollapsed === true,
     got_sick:        p => p.everSick      === true,
-    first_fujoku:    p => (p.fujokuVisits || 0) >= 1,
+    first_fujoku:    p => (p.fujokuVisits      || 0) >= 1,
+    first_pachinko:  p => (p.pachinkoTotalSpent|| 0) >= 5000,
+    pachinko_jackpot:p => (p.pachinkoJackpots  || 0) >= 1,
+    pachinko_addict: p => (p.pachinkoCravings  || 0) >= 8,
     day_100:         p => p.day >= 100,
     promoted_3:      p => p.careerLevel >= 3,
     promoted_4:      p => p.careerLevel >= 4,
