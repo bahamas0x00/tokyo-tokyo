@@ -954,3 +954,15 @@ html, body { height: 100%; overflow: hidden; background: var(--bg); color: var(-
   content: ''; position: absolute; left: 1px; right: 1px; top: 2px;
   height: 4px; background: #2a1000;
 }
+
+/* ── 工位容器：底部对齐，所有元素共享桌面水平线 ── */
+.px-workstation {
+  display: flex;
+  align-items: flex-end;
+  gap: 10px;
+  position: relative;
+  z-index: 2;
+}
+/* 副屏和马克杯在 flex-end 容器中自动底部对齐，移除旧有的 position/z-index/margin 覆盖 */
+.px-side-monitor { position: static; margin-right: 0; }
+.px-desk-right   { position: static; margin-left: 0; margin-bottom: 0; }
