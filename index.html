@@ -259,6 +259,24 @@
             </div>
           </div>
 
+          <!-- 副屏：Teams / 截止日提醒 -->
+          <div class="px-side-monitor">
+            <div class="px-side-frame">
+              <div class="px-side-screen">
+                <div class="px-teams-ui">
+                  <div class="px-teams-header">Teams <span class="px-teams-badge">8</span></div>
+                  <div class="px-teams-msg px-teams-urgent" data-i18n="teams.deadline">締切: 明日</div>
+                  <div class="px-teams-msg" data-i18n="teams.leader">上司: 進捗は？</div>
+                  <div class="px-teams-msg px-teams-urgent" data-i18n="teams.pr">PR レビュー頼む</div>
+                  <div class="px-teams-msg" data-i18n="teams.meeting">会議 18:00</div>
+                </div>
+              </div>
+              <div class="px-scan"></div>
+            </div>
+            <div class="px-side-neck"></div>
+            <div class="px-side-foot"></div>
+          </div>
+
           <!-- 後輩工位：careerLevel>=2 且有後輩时显示 -->
           <div class="px-kohai-desk" style="display:none">
             <svg viewBox="0 0 36 28" width="36" height="28" style="image-rendering:pixelated">
@@ -304,15 +322,30 @@ git push --force</div>
             <div class="px-keyboard">
               <span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span>
               <span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span>
+              <span class="pk-space"></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span>
             </div>
-            <!-- 社畜（伏案敲码）-->
-            <svg class="px-worker" viewBox="0 0 16 13" style="image-rendering:pixelated">
-              <rect x="4" y="0" width="8" height="3" fill="#2b2230"/><rect x="3" y="2" width="10" height="2" fill="#2b2230"/>
-              <rect x="4" y="4" width="8" height="3" fill="#f0b890"/>
-              <rect x="1" y="7" width="14" height="6" fill="#cdd6e6"/>
-              <rect x="7" y="7" width="2" height="6" fill="#c0392b"/>
-              <rect x="0" y="9" width="2" height="3" fill="#f0b890"/><rect x="14" y="9" width="2" height="3" fill="#f0b890"/>
+            <!-- 社畜（坐直、手搭键盘、西装领带） -->
+            <svg class="px-worker" viewBox="0 0 20 16" style="image-rendering:pixelated">
+              <!-- 头发 -->
+              <rect x="6" y="0" width="8" height="3" fill="#1a1010"/>
+              <rect x="5" y="2" width="10" height="2" fill="#1a1010"/>
+              <!-- 脸 -->
+              <rect x="6" y="4" width="8" height="6" fill="#f0b890"/>
+              <!-- 西装 -->
+              <rect x="2" y="10" width="16" height="6" fill="#1e2a3e"/>
+              <!-- 衬衫领 -->
+              <rect x="6" y="10" width="3" height="3" fill="#e8e8e8"/>
+              <rect x="11" y="10" width="3" height="3" fill="#e8e8e8"/>
+              <!-- 领带 -->
+              <rect x="9" y="10" width="2" height="5" fill="#c0392b"/>
+              <!-- 手搭在键盘上 -->
+              <rect x="0" y="12" width="3" height="4" fill="#f0b890"/>
+              <rect x="17" y="12" width="3" height="4" fill="#f0b890"/>
             </svg>
+          </div>
+          <!-- 桌右：马克杯 -->
+          <div class="px-desk-right">
+            <div class="px-mug"></div>
           </div>
 
           <div class="click-info">

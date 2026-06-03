@@ -335,21 +335,28 @@ html, body { height: 100%; overflow: hidden; background: var(--bg); color: var(-
 
 /* 键盘 */
 .px-keyboard {
-  width: 100px; height: 22px;
-  background: var(--orange);
-  border: 2px solid #7a4000;
-  box-shadow: 0 4px 0 #7a4000;
+  width: 106px; height: 30px;
+  background: #1a1228;
+  border: 2px solid #3a2a50;
+  box-shadow: 0 4px 0 #0d0018, 0 5px 0 #000;
   display: grid;
   grid-template-columns: repeat(8, 1fr);
-  grid-template-rows: repeat(2, 1fr);
+  grid-template-rows: repeat(3, 1fr);
   gap: 2px; padding: 3px;
+  position: relative;
 }
-.px-keyboard span { background: #2d2238; box-shadow: inset 0 1px 0 rgba(255,255,255,.15); }
+.px-keyboard::after {
+  content: ''; position: absolute; left: 0; right: 0; bottom: -3px; height: 1px;
+  background: #9d00ff; opacity: 0.6;
+}
+.px-keyboard span { background: #2d1e40; box-shadow: inset 0 1px 0 rgba(255,255,255,.12); }
+.px-keyboard .pk-space { background: #3d2a58; grid-column: span 3; }
 
-/* 点击反馈：屏幕闪一下 + 少女加速跳 + 键盘按下 */
+/* 点击反馈：屏幕闪一下 + 键盘按下 */
 .px-setup.typing .px-screen { box-shadow: inset 0 0 10px rgba(57,211,83,.7); }
 .px-setup.typing .px-dancer { animation-duration: .35s; }
-.px-setup.typing .px-keyboard { transform: translateY(2px); box-shadow: 0 2px 0 #7a4000; }
+.px-setup.typing .px-keyboard { transform: translateY(2px); box-shadow: 0 2px 0 #0d0018; }
+.px-setup.typing .px-keyboard::after { opacity: 1; background: #ff2d78; }
 
 /* —— 连击计数器 —— */
 .combo-display {
@@ -892,4 +899,58 @@ html, body { height: 100%; overflow: hidden; background: var(--bg); color: var(-
   position: relative; z-index: 2;
   margin-right: 16px;
   align-items: flex-end;
+}
+
+/* ── 副屏：Teams / 工作消息 ── */
+.px-side-monitor {
+  display: flex; flex-direction: column; align-items: center;
+  position: relative; z-index: 2; margin-right: 10px;
+}
+.px-side-frame {
+  background: #0e1018; border: 2px solid #1a2240; padding: 3px;
+  box-shadow: 0 0 0 1px #000, 0 0 10px rgba(68,136,204,.15);
+  position: relative;
+}
+.px-side-screen {
+  width: 72px; height: 52px; background: #070c14; overflow: hidden;
+}
+.px-side-neck { width: 10px; height: 6px; background: #2b2b40; border-left: 1px solid #000; border-right: 1px solid #000; }
+.px-side-foot { width: 28px; height: 4px; background: #2b2b40; border: 1px solid #000; box-shadow: 0 2px 0 #7a4000; margin-bottom: 8px; }
+
+.px-teams-ui { padding: 2px 3px; }
+.px-teams-header {
+  font-family: var(--font-px); font-size: 4px; color: #4488cc;
+  margin-bottom: 3px; display: flex; align-items: center; gap: 2px;
+}
+.px-teams-badge {
+  background: #c0392b; color: #fff; font-size: 3px;
+  padding: 0 2px; border-radius: 1px;
+}
+.px-teams-msg {
+  font-family: var(--font-px); font-size: 3.5px; color: #3a5a7a;
+  line-height: 6px; white-space: nowrap; overflow: hidden;
+}
+.px-teams-urgent { color: #cc3333 !important; animation: teams-ping 2.5s steps(1) infinite; }
+@keyframes teams-ping { 40%,60% { opacity: 0.3; } }
+
+/* ── 桌右：马克杯 ── */
+.px-desk-right {
+  display: flex; flex-direction: column; align-items: center;
+  justify-content: flex-end; position: relative; z-index: 2;
+  margin-left: 8px; margin-bottom: 8px;
+}
+.px-mug {
+  width: 14px; height: 16px;
+  background: #b03030; border: 2px solid #7a1e1e;
+  box-shadow: 0 3px 0 #4a0e0e;
+  position: relative;
+}
+.px-mug::before {
+  content: ''; position: absolute; right: -5px; top: 4px;
+  width: 4px; height: 6px;
+  border: 2px solid #7a1e1e; border-left: none;
+}
+.px-mug::after {
+  content: ''; position: absolute; left: 1px; right: 1px; top: 2px;
+  height: 4px; background: #2a1000;
 }
