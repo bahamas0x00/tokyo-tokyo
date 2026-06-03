@@ -677,8 +677,8 @@ const Game = (() => {
     ramen_lover:     p => (p.shopUseCounts?.ramen || 0) >= 5,
     max_combo:       p => (p.maxCombo || 0) >= 30,
     cash_rich:       p => p.money >= 10_000_000,
-    btc_moon:        p => (p.btcPeak   || 1) >= 5.0,
-    btc_zero:        p => (p.btcValley || 1) <= 0.05,
+    btc_moon:        p => (p.portfolio?.btc?.qty || 0) > 0 && (p.btcPeak   || 1) >= 5.0,
+    btc_zero:        p => (p.portfolio?.btc?.qty || 0) > 0 && (p.btcValley || 1) <= 0.05,
   };
 
   function checkAchievements() {
