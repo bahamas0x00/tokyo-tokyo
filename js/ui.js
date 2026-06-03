@@ -550,13 +550,12 @@ const UI = (() => {
   let _slideOutTimer = null;
 
   function _slideOutPopup(popup) {
-    popup.classList.remove('show');
-    popup.style.opacity = '0';
+    popup.classList.add('fading');
     _slideOutTimer = setTimeout(() => {
       popup.classList.add('hidden');
-      popup.style.opacity = '';
+      popup.classList.remove('show', 'fading');
       _slideOutTimer = null;
-    }, 550);
+    }, 1600);
   }
 
   function showEventPopup(event, onChoice) {
@@ -569,6 +568,22 @@ const UI = (() => {
     // 取消任何待执行的 slideOut 回调，防止它把新弹窗藏掉
     if (_slideOutTimer) { clearTimeout(_slideOutTimer); _slideOutTimer = null; }
 
+    // 悬停恢复：一次性绑定
+    if (!popup._hoverBound) {
+      popup._hoverBound = true;
+      popup.addEventListener('mouseenter', () => {
+        if (!popup.classList.contains('fading')) return;
+        clearTimeout(_slideOutTimer);
+        _slideOutTimer = null;
+        popup.classList.remove('fading');
+        // 悬停离开后 2.5s 再开始渐淡
+        popup.addEventListener('mouseleave', function onLeave() {
+          popup.removeEventListener('mouseleave', onLeave);
+          _slideOutTimer = setTimeout(() => _slideOutPopup(popup), 2500);
+        });
+      });
+    }
+
     // 重置
     clearTimeout(_eventTimer);
     choicesEl.innerHTML = '';
@@ -578,8 +593,8 @@ const UI = (() => {
     countdown.style.transition = 'none';
     countdown.style.width = '100%';
 
-    // 滑入（重置 opacity 防止上次 slideOut 留下 opacity:0）
-    popup.style.opacity = '';
+    // 滑入（清除上次 fading 状态）
+    popup.classList.remove('fading');
     popup.classList.remove('hidden');
     requestAnimationFrame(() => requestAnimationFrame(() => popup.classList.add('show')));
 

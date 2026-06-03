@@ -435,6 +435,11 @@ html, body { height: 100%; overflow: hidden; background: var(--bg); color: var(-
 }
 .event-popup.show   { transform: translateX(0); opacity: 1; }
 .event-popup.hidden { display: none; }
+.event-popup.fading {
+  opacity: 0;
+  transition: opacity 1.5s ease;
+  cursor: pointer;
+}
 .event-countdown {
   position: absolute;
   top: 0; left: 0;
