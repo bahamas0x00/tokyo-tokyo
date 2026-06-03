@@ -176,18 +176,18 @@
             <rect x="126" y="24" width="14" height="3" fill="#ff2d78" opacity="0.92"/>
             <rect x="330" y="26" width="14" height="3" fill="#00f0ff" opacity="0.92"/>
             <rect x="380" y="30" width="12" height="3" fill="#9d00ff" opacity="0.90"/>
-            <!-- 东京塔（移至左侧 x≈80，避免与工位区重叠） -->
-            <rect x="79"  y="4"  width="2" height="3" fill="#fff"/>
-            <rect x="79"  y="7"  width="2" height="9" fill="#ffd76a"/>
-            <rect x="77"  y="16" width="6" height="12" fill="#e05523"/>
-            <rect x="72"  y="28" width="16" height="3" fill="#f07840"/>
-            <rect x="76"  y="31" width="8" height="16" fill="#e05523"/>
-            <rect x="70"  y="47" width="20" height="3" fill="#f07840"/>
-            <rect x="76"  y="50" width="8" height="6" fill="#e05523"/>
-            <polygon points="66,80 70,80 76,50 74,50" fill="#c73e15"/>
-            <polygon points="84,50 86,50 92,80 88,80" fill="#c73e15"/>
-            <rect x="74"  y="50" width="10" height="30" fill="#b83010" opacity="0.18"/>
-            <rect x="68"  y="68" width="22" height="2" fill="#d44a18"/>
+            <!-- 东京塔（左侧剪影，暗色不抢眼） -->
+            <rect x="79"  y="10" width="2" height="2" fill="#ffd76a" opacity="0.6"/>
+            <rect x="79"  y="12" width="2" height="8"  fill="#162448"/>
+            <rect x="77"  y="20" width="6" height="10" fill="#162448"/>
+            <rect x="72"  y="30" width="16" height="2"  fill="#1e3060"/>
+            <rect x="76"  y="32" width="8" height="14"  fill="#162448"/>
+            <rect x="70"  y="46" width="20" height="2"  fill="#1e3060"/>
+            <rect x="76"  y="48" width="8" height="6"   fill="#162448"/>
+            <polygon points="66,80 70,80 76,48 74,48" fill="#152040"/>
+            <polygon points="84,48 86,48 92,80 88,80" fill="#152040"/>
+            <rect x="74"  y="48" width="10" height="32" fill="#152040"/>
+            <rect x="68"  y="66" width="22" height="2"  fill="#1a2a50"/>
             <!-- 窗户 -->
             <g fill="#ffd76a">
               <rect class="px-win" x="4"   y="60" width="2" height="2"/>
@@ -248,26 +248,6 @@
               <span id="rest-icon"></span>
               <span id="rest-timer"></span>
             </div>
-          </div>
-
-          <!-- 工位整体容器（底部对齐，统一桌面水平线） -->
-          <div class="px-workstation">
-          <!-- 副屏：Teams / 截止日提醒 -->
-          <div class="px-side-monitor">
-            <div class="px-side-frame">
-              <div class="px-side-screen">
-                <div class="px-teams-ui">
-                  <div class="px-teams-header">Teams <span class="px-teams-badge">8</span></div>
-                  <div class="px-teams-msg px-teams-urgent" data-i18n="teams.deadline">締切: 明日</div>
-                  <div class="px-teams-msg" data-i18n="teams.leader">上司: 進捗は？</div>
-                  <div class="px-teams-msg px-teams-urgent" data-i18n="teams.pr">PR レビュー頼む</div>
-                  <div class="px-teams-msg" data-i18n="teams.meeting">会議 18:00</div>
-                </div>
-              </div>
-              <div class="px-scan"></div>
-            </div>
-            <div class="px-side-neck"></div>
-            <div class="px-side-foot"></div>
           </div>
 
           <!-- 後輩工位：careerLevel>=2 且有後輩时显示 -->
@@ -343,11 +323,6 @@ git push --force</div>
               <rect x="17" y="16" width="3" height="4" fill="#f0b890"/>
             </svg>
           </div>
-          <!-- 桌右：马克杯 -->
-          <div class="px-desk-right">
-            <div class="px-mug"></div>
-          </div>
-          </div><!-- /px-workstation -->
 
           <div class="click-info">
             <div id="val-click-rate" class="neon-gold px" style="font-size:8px">¥100/CLICK</div>
