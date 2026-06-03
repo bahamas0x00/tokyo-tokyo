@@ -550,10 +550,15 @@ const UI = (() => {
   let _slideOutTimer = null;
 
   function _slideOutPopup(popup) {
+    // 如果鼠标正在上面，取消本次淡出，等 mouseleave 后再触发
+    if (popup.matches(':hover')) return;
     popup.classList.add('fading');
     _slideOutTimer = setTimeout(() => {
-      popup.classList.add('hidden');
-      popup.classList.remove('show', 'fading');
+      // 1.5s 淡出结束时再次检查，悬停中就跳过隐藏
+      if (!popup.matches(':hover')) {
+        popup.classList.add('hidden');
+        popup.classList.remove('show', 'fading');
+      }
       _slideOutTimer = null;
     }, 1600);
   }
