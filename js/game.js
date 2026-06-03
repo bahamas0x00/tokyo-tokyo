@@ -115,6 +115,7 @@ const Game = (() => {
     renderShops();
     UI.renderAchievements(player);
     startLoop();
+    updateSceneState();   // ← 新增，首帧立刻设置正确时间/体力类
     bindGameButtons();
     bindCollapsible();
 
@@ -224,6 +225,53 @@ const Game = (() => {
     }
   }
 
+  // ── scene state ──────────────────────────────────────────
+  function updateSceneState() {
+    const h = new Date().getHours();
+    const office = document.getElementById('btn-click');
+    if (!office) return;
+
+    // 时间类
+    office.classList.remove('time-day', 'time-dusk', 'time-night');
+    if      (h >= 6 && h < 18) office.classList.add('time-day');
+    else if (h >= 18 && h < 22) office.classList.add('time-dusk');
+    else                        office.classList.add('time-night');
+
+    // 体力类
+    office.classList.remove('energy-high', 'energy-mid', 'energy-low');
+    if      (player.energy > 60) office.classList.add('energy-high');
+    else if (player.energy >= 30) office.classList.add('energy-mid');
+    else                          office.classList.add('energy-low');
+
+    // BTC 崩盘叠加
+    const btcOverlay = document.getElementById('btc-crash-overlay');
+    if (btcOverlay) btcOverlay.style.display = player.btcMarket <= 0.15 ? 'block' : 'none';
+
+    // 後輩工位
+    const kohaiDesk = document.querySelector('.px-kohai-desk');
+    if (kohaiDesk) {
+      kohaiDesk.style.display =
+        (player.careerLevel >= 2 && (player.autoStaff?.kohai || 0) > 0) ? 'flex' : 'none';
+    }
+
+    // 签名时刻：深夜+低体力时屏幕显示真实时间
+    const isSignature = office.classList.contains('time-night')
+                     && office.classList.contains('energy-low');
+    const codeEl = document.querySelector('.px-code');
+    if (!codeEl) return;
+    if (isSignature && !codeEl.dataset.signature) {
+      const hh = String(new Date().getHours()).padStart(2, '0');
+      const mm = String(new Date().getMinutes()).padStart(2, '0');
+      const txt = `${hh}:${mm} // still here\nまだ頑張ってる…\n\n${hh}:${mm} // still here\nまだ頑張ってる…`;
+      codeEl.textContent = txt;
+      codeEl.dataset.signature = '1';
+    } else if (!isSignature && codeEl.dataset.signature) {
+      codeEl.textContent =
+        `while(alive){\n push(commit)\n overtime++\n sleep = 0\n // 逃げたい…\n}\ngit push --force\nwhile(alive){\n push(commit)\n overtime++\n sleep = 0\n // 逃げたい…\n}\ngit push --force`;
+      delete codeEl.dataset.signature;
+    }
+  }
+
   // ── main loop ─────────────────────────────────────────────
   let _wasCollapsed = false;
   let _lastEnergyZone = 3;
@@ -258,10 +306,15 @@ const Game = (() => {
       checkEvent();
       checkMarketEvent();
       checkCrisis();
+      updateSceneState();   // ← 新增
     }, 1000);
 
     // auto-save every 60s
-    setInterval(() => { save(); UI.toast(t('toast.auto_save'), 1200); }, 60000);
+    setInterval(() => {
+      save();
+      UI.toast(t('toast.auto_save'), 1200);
+      updateSceneState(); // 签名时刻的时间戳每分钟刷新
+    }, 60000);
 
     // market fluctuation every 5-15 min
     scheduleMarket();
