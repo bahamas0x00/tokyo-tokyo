@@ -273,6 +273,62 @@ html, body { height: 100%; overflow: hidden; background: var(--bg); color: var(-
   100% { transform: translateX(-2px) rotate(-5deg); }
 }
 /* 显示器底座 */
+/* ── 微动画层 ── */
+.px-ambient {
+  position: absolute; inset: 0; pointer-events: none; z-index: 1; overflow: hidden;
+}
+
+/* 电车 */
+.px-train {
+  position: absolute; bottom: 28%; left: 0;
+  opacity: 0; pointer-events: none;
+  animation: train-slide 50s linear infinite;
+}
+.time-night .px-train { opacity: 0.75; }
+.time-dusk  .px-train { opacity: 0.35; }
+@keyframes train-slide {
+  from { transform: translateX(-80px); }
+  to   { transform: translateX(calc(100vw + 80px)); }
+}
+
+/* 飞机（纯CSS点+尾迹） */
+.px-plane {
+  position: absolute; top: 12%; left: 0;
+  width: 3px; height: 2px;
+  background: #fff;
+  opacity: 0.5;
+  box-shadow: -4px 1px 0 rgba(255,255,255,.3), -8px 1px 0 rgba(255,255,255,.1);
+  animation: plane-fly 90s linear infinite, plane-blink 1.2s steps(1) infinite;
+}
+.time-day .px-plane { opacity: 0.2; }
+@keyframes plane-fly {
+  from { transform: translate(-20px, 0); }
+  to   { transform: translate(calc(100vw + 20px), -15px); }
+}
+@keyframes plane-blink { 50% { opacity: 0; } }
+
+/* 雨丝（深夜+体力中/低） */
+.px-rain {
+  display: none;
+  position: absolute; inset: 0; pointer-events: none;
+  background: repeating-linear-gradient(
+    105deg,
+    transparent 0, transparent 3px,
+    rgba(100,160,255,.12) 3px, rgba(100,160,255,.12) 4px
+  );
+  animation: rain-fall 0.35s linear infinite;
+}
+.time-night.energy-mid .px-rain,
+.time-night.energy-low .px-rain { display: block; }
+@keyframes rain-fall {
+  from { background-position: 0 0; }
+  to   { background-position: -20px 40px; }
+}
+
+/* 窗户异步闪烁 */
+.px-win--flicker { animation: win-blink 9s steps(1) infinite; }
+@keyframes win-blink { 0%,100% { opacity: 1; } 40%,60% { opacity: 0; } }
+
 .px-monitor-neck { width: 16px; height: 8px; background: #2b2b40; border-left: 2px solid #000; border-right: 2px solid #000; }
 .px-monitor-foot { width: 44px; height: 5px; background: #2b2b40; border: 2px solid #000; box-shadow: 0 3px 0 #7a4000; margin-bottom: 8px; }
 
