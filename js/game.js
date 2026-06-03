@@ -313,7 +313,10 @@ const Game = (() => {
     setInterval(() => {
       save();
       UI.toast(t('toast.auto_save'), 1200);
-      updateSceneState(); // 签名时刻的时间戳每分钟刷新
+      // 签名时刻时间戳每分钟刷新：先清标记让 updateSceneState 重写时间
+      const _codeEl = document.querySelector('.px-code');
+      if (_codeEl && _codeEl.dataset.signature) delete _codeEl.dataset.signature;
+      updateSceneState();
     }, 60000);
 
     // market fluctuation every 5-15 min
