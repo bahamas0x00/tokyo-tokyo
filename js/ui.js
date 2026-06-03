@@ -598,14 +598,14 @@ const UI = (() => {
           resultEl.className = 'event-popup-result ' + (c.tone || 'neutral');
           resultEl.classList.remove('hidden');
         }
-        const closeDelay = c._delay != null ? c._delay : 900;
+        const closeDelay = c._delay != null ? c._delay : 2800;
         setTimeout(() => { _slideOutPopup(popup); resultEl.classList.add('hidden'); onChoice(c); }, closeDelay);
       };
-      if (c.reply) typewrite(textEl, c.reply, 18, finish);
+      if (c.reply) typewrite(textEl, c.reply, 10, finish);
       else finish();
     }
 
-    typewrite(textEl, event.text, 15, () => {
+    typewrite(textEl, event.text, 8, () => {
       choices.forEach(c => {
         const btn = document.createElement('button');
         btn.className = 'choice-btn';
