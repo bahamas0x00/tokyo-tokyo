@@ -307,8 +307,12 @@ html, body { height: 100%; overflow: hidden; background: var(--bg); color: var(-
 
 /* —— 东京夜景办公室（点击区） —— */
 .pixel-office { position: relative; overflow: hidden;
-  background: linear-gradient(#0a1226 0%, #0e1830 55%, #16223e 100%); }
-.pixel-office:hover { background: linear-gradient(#0c1530 0%, #122038 55%, #1a2848 100%); }
+  background: linear-gradient(#030609 0%, #060d1a 100%); } /* 默认深夜，JS加载前不闪 */
+/* 时间段天空 */
+.pixel-office.time-day   { background: linear-gradient(#1a4a8c 0%, #2d6abf 60%, #1e3a80 100%); }
+.pixel-office.time-dusk  { background: linear-gradient(#1a0a2e 0%, #7a2a1a 55%, #c05018 100%); }
+.pixel-office.time-night { background: linear-gradient(#030609 0%, #060d1a 100%); }
+.pixel-office:hover { filter: brightness(1.08); }
 .px-skyline { position: absolute; left: 0; bottom: 0; width: 100%; height: 62%; z-index: 0; opacity: .9; pointer-events: none; }
 .px-setup  { position: relative; z-index: 2; }
 .px-worker {
