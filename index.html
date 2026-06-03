@@ -196,6 +196,31 @@
             <rect x="39" y="57" width="22" height="2" fill="#d44a18"/>
           </svg>
 
+          <!-- 背景微动画层 -->
+          <div class="px-ambient">
+            <!-- 电车：深夜/傍晚时从左向右划过 -->
+            <div class="px-train">
+              <svg viewBox="0 0 72 10" width="72" height="10" style="image-rendering:pixelated">
+                <rect x="0"  y="2" width="72" height="6" fill="#0d1f3c"/>
+                <rect x="0"  y="0" width="10" height="4" fill="#0d1f3c"/>
+                <rect x="2"  y="3" width="3"  height="3" fill="#ffe066" opacity="0.8"/>
+                <rect x="14" y="3" width="3"  height="3" fill="#ffe066" opacity="0.6"/>
+                <rect x="26" y="3" width="3"  height="3" fill="#ffe066" opacity="0.6"/>
+                <rect x="38" y="3" width="3"  height="3" fill="#ffe066" opacity="0.5"/>
+                <rect x="50" y="3" width="3"  height="3" fill="#ffe066" opacity="0.4"/>
+                <rect x="62" y="3" width="3"  height="3" fill="#ffe066" opacity="0.3"/>
+                <rect x="4"  y="8" width="4"  height="2" fill="#06101e"/>
+                <rect x="24" y="8" width="4"  height="2" fill="#06101e"/>
+                <rect x="44" y="8" width="4"  height="2" fill="#06101e"/>
+                <rect x="64" y="8" width="4"  height="2" fill="#06101e"/>
+              </svg>
+            </div>
+            <!-- 飞机：缓慢斜穿天空（纯 CSS，无 SVG 内容） -->
+            <div class="px-plane"></div>
+            <!-- 雨丝（深夜+体力中/低时出现） -->
+            <div class="px-rain"></div>
+          </div>
+
           <!-- 连击计数器 -->
           <div id="combo-display" class="combo-display" style="display:none"></div>
           <!-- 病倒/趴桌倒计时遮罩 -->
@@ -204,6 +229,25 @@
               <span id="rest-icon"></span>
               <span id="rest-timer"></span>
             </div>
+          </div>
+
+          <!-- 後輩工位：careerLevel>=2 且有後輩时显示 -->
+          <div class="px-kohai-desk">
+            <svg viewBox="0 0 36 28" width="36" height="28" style="image-rendering:pixelated">
+              <!-- 小显示器 -->
+              <rect x="4"  y="4"  width="20" height="13" fill="#15151f" stroke="#2b2b40" stroke-width="1"/>
+              <rect x="6"  y="6"  width="16" height="9"  fill="#041109"/>
+              <text x="7" y="13" font-size="3" fill="#39d353" font-family="monospace">...</text>
+              <!-- 底座 -->
+              <rect x="12" y="17" width="4"  height="3"  fill="#2b2b40"/>
+              <rect x="9"  y="20" width="10" height="2"  fill="#2b2b40"/>
+              <!-- 键盘 -->
+              <rect x="4"  y="22" width="20" height="5"  fill="#c17a1a" stroke="#7a4000" stroke-width="1"/>
+              <!-- 後輩像素人 -->
+              <rect x="10" y="0"  width="6"  height="5"  fill="#f0b890"/>
+              <rect x="9"  y="-2" width="8"  height="4"  fill="#2b2230"/>
+              <rect x="6"  y="5"  width="16" height="3"  fill="#6ba4d4"/>
+            </svg>
           </div>
 
           <!-- 工位：显示器 + 键盘 + 伏案的社畜 -->
@@ -247,6 +291,8 @@ git push --force</div>
             <div id="val-click-rate" class="neon-gold px" style="font-size:8px">¥100/CLICK</div>
             <div class="dim" style="font-family:var(--font-px);font-size:7px;margin-top:3px">CLICK TO CODE</div>
           </div>
+          <!-- BTC崩盘叠加（btcMarket <= 0.15 时激活） -->
+          <div id="btc-crash-overlay"></div>
         </div>
 
         <!-- 团队面板（后辈展示） -->
