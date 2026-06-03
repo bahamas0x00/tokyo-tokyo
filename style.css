@@ -875,3 +875,20 @@ html, body { height: 100%; overflow: hidden; background: var(--bg); color: var(-
   color: #fff; background: rgba(0,0,0,.6); padding: 2px 10px; border-radius: 4px;
   letter-spacing: 1px;
 }
+
+/* ── BTC 崩盘叠加 ── */
+#btc-crash-overlay {
+  position: absolute; inset: 0; z-index: 10; pointer-events: none;
+  background: rgba(255,30,30,.18);
+  display: none;
+  animation: btc-flash 0.8s steps(1) infinite;
+}
+@keyframes btc-flash { 50% { opacity: 0.3; } }
+
+/* ── 後輩工位 ── */
+.px-kohai-desk {
+  display: none;
+  position: relative; z-index: 2;
+  margin-right: 16px;
+  align-items: flex-end;
+}
