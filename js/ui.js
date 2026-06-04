@@ -549,13 +549,14 @@ const UI = (() => {
 
   let _slideOutTimer = null;
 
-  function _slideOutPopup(popup) {
+  function _slideOutPopup(popup, force = false) {
     // 如果鼠标正在上面，取消本次淡出，等 mouseleave 后再触发
-    if (popup.matches(':hover')) return;
+    // force=true 时（玩家已明确选择）跳过 hover 检查，强制关闭
+    if (!force && popup.matches(':hover')) return;
     popup.classList.add('fading');
     _slideOutTimer = setTimeout(() => {
-      // 1.5s 淡出结束时再次检查，悬停中就跳过隐藏
-      if (!popup.matches(':hover')) {
+      // 1.5s 淡出结束时再次检查，悬停中就跳过隐藏（force 时也强制）
+      if (force || !popup.matches(':hover')) {
         popup.classList.add('hidden');
         popup.classList.remove('show', 'fading');
       }
@@ -569,9 +570,19 @@ const UI = (() => {
     const textEl     = document.getElementById('popup-text');
     const choicesEl  = document.getElementById('popup-choices');
     const resultEl   = document.getElementById('popup-result');
+    const closeBtn   = document.getElementById('popup-close-btn');
 
     // 取消任何待执行的 slideOut 回调，防止它把新弹窗藏掉
     if (_slideOutTimer) { clearTimeout(_slideOutTimer); _slideOutTimer = null; }
+
+    // X 按钮：强制关闭，用空选项推进游戏状态
+    closeBtn.onclick = () => {
+      clearTimeout(_eventTimer);
+      if (_slideOutTimer) { clearTimeout(_slideOutTimer); _slideOutTimer = null; }
+      popup.classList.add('hidden');
+      popup.classList.remove('show', 'fading');
+      onChoice({ changes: {}, tone: 'neutral', reply: '' });
+    };
 
     // 悬停恢复：一次性绑定
     if (!popup._hoverBound) {
@@ -619,7 +630,7 @@ const UI = (() => {
           resultEl.classList.remove('hidden');
         }
         const closeDelay = c._delay != null ? c._delay : 2800;
-        setTimeout(() => { _slideOutPopup(popup); resultEl.classList.add('hidden'); onChoice(c); }, closeDelay);
+        setTimeout(() => { _slideOutPopup(popup, true); resultEl.classList.add('hidden'); onChoice(c); }, closeDelay);
       };
       if (c.reply) typewrite(textEl, c.reply, 10, finish);
       else finish();

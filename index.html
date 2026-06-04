@@ -176,18 +176,19 @@
             <rect x="126" y="24" width="14" height="3" fill="#ff2d78" opacity="0.92"/>
             <rect x="330" y="26" width="14" height="3" fill="#00f0ff" opacity="0.92"/>
             <rect x="380" y="30" width="12" height="3" fill="#9d00ff" opacity="0.90"/>
-            <!-- 东京塔（左侧剪影，暗色不抢眼） -->
-            <rect x="79"  y="10" width="2" height="2" fill="#ffd76a" opacity="0.6"/>
-            <rect x="79"  y="12" width="2" height="8"  fill="#162448"/>
-            <rect x="77"  y="20" width="6" height="10" fill="#162448"/>
-            <rect x="72"  y="30" width="16" height="2"  fill="#1e3060"/>
-            <rect x="76"  y="32" width="8" height="14"  fill="#162448"/>
-            <rect x="70"  y="46" width="20" height="2"  fill="#1e3060"/>
-            <rect x="76"  y="48" width="8" height="6"   fill="#162448"/>
-            <polygon points="66,80 70,80 76,48 74,48" fill="#152040"/>
-            <polygon points="84,48 86,48 92,80 88,80" fill="#152040"/>
-            <rect x="74"  y="48" width="10" height="32" fill="#152040"/>
-            <rect x="68"  y="66" width="22" height="2"  fill="#1a2a50"/>
+            <!-- 东京塔（尖锐锥形：顶 2px → 底 28px，连续收缩，展望台微突） -->
+            <rect x="79" y="10" width="2" height="2" fill="#ffd76a" opacity="0.9"/>
+            <rect x="79" y="12" width="2" height="8" fill="#ff6600"/>
+            <polygon points="79,20 81,20 94,80 66,80" fill="#ff6600"/>
+            <rect x="77" y="26" width="6"  height="1" fill="#dddddd"/>
+            <rect x="74" y="30" width="12" height="1" fill="#dddddd"/>
+            <rect x="74" y="31" width="12" height="3" fill="#ff6600"/>
+            <rect x="76" y="38" width="8"  height="1" fill="#dddddd"/>
+            <rect x="69" y="46" width="22" height="1" fill="#dddddd"/>
+            <rect x="69" y="47" width="22" height="4" fill="#ff6600"/>
+            <rect x="72" y="55" width="16" height="1" fill="#dddddd"/>
+            <rect x="70" y="64" width="20" height="1" fill="#dddddd"/>
+            <rect x="68" y="73" width="24" height="1" fill="#dddddd"/>
             <!-- 窗户 -->
             <g fill="#ffd76a">
               <rect class="px-win" x="4"   y="60" width="2" height="2"/>
@@ -251,23 +252,7 @@
           </div>
 
           <!-- 後輩工位：careerLevel>=2 且有後輩时显示 -->
-          <div class="px-kohai-desk" style="display:none">
-            <svg viewBox="0 0 36 28" width="36" height="28" style="image-rendering:pixelated">
-              <!-- 小显示器 -->
-              <rect x="4"  y="4"  width="20" height="13" fill="#15151f" stroke="#2b2b40" stroke-width="1"/>
-              <rect x="6"  y="6"  width="16" height="9"  fill="#041109"/>
-              <text x="7" y="13" font-size="3" fill="#39d353" font-family="monospace">...</text>
-              <!-- 底座 -->
-              <rect x="12" y="17" width="4"  height="3"  fill="#2b2b40"/>
-              <rect x="9"  y="20" width="10" height="2"  fill="#2b2b40"/>
-              <!-- 键盘 -->
-              <rect x="4"  y="22" width="20" height="5"  fill="#c17a1a" stroke="#7a4000" stroke-width="1"/>
-              <!-- 後輩像素人 -->
-              <rect x="10" y="0"  width="6"  height="5"  fill="#f0b890"/>
-              <rect x="9"  y="-2" width="8"  height="4"  fill="#2b2230"/>
-              <rect x="6"  y="5"  width="16" height="3"  fill="#6ba4d4"/>
-            </svg>
-          </div>
+          <div class="px-kohai-desk" style="display:none"></div>
 
           <!-- 工位：显示器 + 键盘 + 伏案的社畜 -->
           <div class="px-setup" id="px-main-worker">
@@ -343,6 +328,7 @@ git push --force</div>
         <!-- 事件弹窗 -->
         <div id="event-popup" class="event-popup hidden">
           <div id="popup-countdown" class="event-countdown"></div>
+          <button class="popup-close-btn" id="popup-close-btn" aria-label="close">✕</button>
           <div class="event-popup-tag" id="popup-tag" data-i18n="popup.tag">── 突发事件 ──</div>
           <div class="event-popup-text" id="popup-text"></div>
           <div class="event-popup-choices" id="popup-choices"></div>
