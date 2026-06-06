@@ -556,28 +556,39 @@ const Game = (() => {
     }
 
     checkAchievements();
-
-    const canRetry = player.canAfford(bet) && player.energy > 0;
-    UI.showEventPopup({
-      text,
-      choices: [
-        ...(canRetry ? [{ label: t('pachinko.retry'), tone: 'neutral', _retry: true }] : []),
-        { label: t('pachinko.quit'), tone: 'neutral', _retry: false, _delay: 100 },
-      ],
-    }, choice => {
-      if (choice._retry && player.canAfford(bet)) {
-        spinPachinko(bet);
-      } else {
-        UI.updateStats(player);
-        renderShops();
-        save();
-        eventActive = false;
-        player.scheduleNextEvent();
-      }
-    });
-
     UI.updateStats(player);
     renderShops();
+
+    function showResultPopup() {
+      const canRetry = player.canAfford(bet) && player.energy > 0;
+      UI.showEventPopup({
+        text,
+        choices: [
+          ...(canRetry ? [{ label: t('pachinko.retry'), tone: 'neutral', _retry: true }] : []),
+          { label: t('pachinko.quit'), tone: 'neutral', _retry: false, _delay: 100 },
+        ],
+      }, choice => {
+        if (choice._retry && player.canAfford(bet)) {
+          spinPachinko(bet);
+        } else {
+          UI.updateStats(player);
+          renderShops();
+          save();
+          eventActive = false;
+          player.scheduleNextEvent();
+        }
+      });
+    }
+
+    Effects.spinReel(resultKey, () => {
+      if (resultKey === 'jackpot') {
+        Effects.jackpotBlast().then(showResultPopup);
+      } else {
+        if (resultKey === 'lose')  Effects.screenShake('hard');
+        else if (mult > 1)         Effects.screenShake('soft');
+        showResultPopup();
+      }
+    });
   }
 
   function buyPachinko() {
