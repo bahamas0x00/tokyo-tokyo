@@ -3,3 +3,5 @@ __MACOSX/
 pixel/assets/tileset/tileset.zip
 node_modules/
 *.log
+.claude/settings.local.json
+.superpowers/
