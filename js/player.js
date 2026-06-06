@@ -589,7 +589,7 @@ const SHOP_ITEMS = [
     reply: null, tone: 'neutral' },
 
   { id: 'pachinko', label: '柏青哥', label_ja: 'パチンコ', label_en: 'Pachinko', emoji: '🎰', cat: 'fun',
-    cost: 5000, cooldown: 0, unlockNeed: { stat: 'happiness', below: 65 },
+    cost: 5000, cooldown: 0, unlockNeed: { stat: 'money', above: 5000 },
     changes: {}, // 实际逻辑由 game.js buyPachinko() 处理
     desc: '赌运气。一把就好……', desc_ja: '運試し。一回だけ……', desc_en: 'Just one spin…',
     reply: null, tone: 'neutral' },

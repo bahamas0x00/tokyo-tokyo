@@ -490,6 +490,7 @@ const UI = (() => {
     const allItems = SHOP_ITEMS.filter(item => {
       if (!item.unlockNeed) return true;
       const n = item.unlockNeed;
+      if (n.above != null) return (p[n.stat] ?? 0) >= n.above;
       const minVal = p['min' + n.stat[0].toUpperCase() + n.stat.slice(1)];
       return (minVal ?? p[n.stat] ?? 100) <= n.below;
     });
